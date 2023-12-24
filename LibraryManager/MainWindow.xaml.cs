@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Policy;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -22,12 +23,57 @@ namespace projekt
         public MainWindow()
         {
             InitializeComponent();
-            DisplayAuthors();
+            SetDataToComboBoxes();
+            SizeChanged += MainWindow_SizeChanged;
+        }
+        private async void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            await Task.Delay(100); // Odroczenie przetwarzania na później, aby uniknąć natychmiastowych zmian
+
+            if (MainGrid.RowDefinitions.Count > 0 && ActualHeight > 0)
+            {
+                double availableHeight = ActualHeight - MainGrid.Margin.Top - MainGrid.Margin.Bottom - MainGrid.RowDefinitions[0].ActualHeight;
+
+                if (availableHeight > 0)
+                {
+                    int rowHeight = 25; // Wysokość wiersza
+
+                    int rowsCount = (int)(availableHeight / rowHeight);
+
+                    AllBooksDataGrid.MaxHeight = rowsCount * rowHeight;
+                }
+            }
+        }
+
+
+
+        public async void SetDataToComboBoxes()
+        {
+            await DisplayAuthors();
+            await DisplayPublishers();
+            await DisplayGenres();
         }
         async Task DisplayAuthors()
         {
             var authors = await _database.GetAuthors();
             NewBookAuthor.ItemsSource = authors;
+            NewBookAuthor.DisplayMemberPath = "Name"; 
+            NewBookAuthor.SelectedValuePath = "Id";  
+        }
+
+        async Task DisplayPublishers()
+        {
+            var publishers = await _database.GetPublishers();
+            NewBookPublisher.ItemsSource = publishers;
+            NewBookPublisher.DisplayMemberPath = "Nazwa";
+            NewBookPublisher.SelectedValuePath = "Id";
+        }
+        async Task DisplayGenres()
+        {
+            var genres = await _database.GetGenres();
+            NewBookGenre.ItemsSource = genres;
+            NewBookGenre.DisplayMemberPath = "Nazwa";
+            NewBookGenre.SelectedValuePath = "Id";
         }
 
         private void listBox1_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -48,13 +94,12 @@ namespace projekt
 
         private async void Dodaj_Click(object sender, RoutedEventArgs e)
         {
+            int authorId = (int)NewBookAuthor.SelectedValue;
+            int publisherId = (int)NewBookPublisher.SelectedValue;
+            int genreId = (int)NewBookGenre.SelectedValue;
             string title = NewBookTitle.Text;
             string date = NewBookDate.Text;
-            string author = NewBookAuthor.Text;
-            string publisher = NewBookPublisher.Text;
-            string genre = NewBookGenre.Text;
-            //ZAMIAST WPISYWAC AUTORA Z KSIAZKI TO SELECT NA AUTOROW I POKAZAC JACY SA W BAZIE 
-            await _database.AddBook(title, date, author, publisher, genre);
+            await _database.AddBook(title, date, authorId, publisherId, genreId);
             MainGrid.Visibility = Visibility.Visible;
             DodajKsiazkeGrid.Visibility = Visibility.Collapsed;
         }

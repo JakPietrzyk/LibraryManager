@@ -12,7 +12,11 @@
                 <Button Content="Dodaj książkę" Click="DodajKsiazke_Click" Width="150" Margin="0,10,0,0"/>
                 <Button Content="Pokaż wszystkie książki" Click="PokazKsiazki_Click" Width="150"/>
                 <Button Content="Pokaż wsyzstkie wypozyczenia" Click="PokazWypozyczenia_Click"  Width="150"/>
-                <DataGrid x:Name="AllBooksDataGrid" Margin="20" AutoGenerateColumns="True" Visibility="Collapsed" CanUserSortColumns="False"/>
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <DataGrid x:Name="AllBooksDataGrid" Margin="20" AutoGenerateColumns="True" 
+                              Visibility="Collapsed" CanUserSortColumns="False" Width="Auto" Height="Auto" 
+                              HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </ScrollViewer>
             </StackPanel>
         </Grid>
         <Grid x:Name="DodajKsiazkeGrid" Visibility="Collapsed">
@@ -20,10 +24,9 @@
                 <Label Content="Dodaj nową książkę" FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
                 <TextBox x:Name="NewBookTitle" Margin="0,0,0,5" Width="200" Text="Tytuł książki"/>
                 <TextBox x:Name="NewBookDate" Margin="0,0,0,5" Width="200" Text="1000-01-01"/>
-                <ComboBox x:Name="NewBookAuthor" Margin="0,0,0,5" Width="200" DisplayMemberPath="." Text="Autor książki"/>
-                <!--<TextBox x:Name="NewBookAuthor" Margin="0,0,0,5" Width="200" Text="Autor ksiazki"/>-->
-                <TextBox x:Name="NewBookPublisher" Margin="0,0,0,5" Width="200" Text="Wydawnictwo"/>
-                <TextBox x:Name="NewBookGenre" Margin="0,0,0,5" Width="200" Text="Dziedzina"/>
+                <ComboBox x:Name="NewBookAuthor" Margin="0,0,0,5" Width="200" DisplayMemberPath="Name" SelectedValuePath="Id" Text="Autor książki"/>
+                <ComboBox x:Name="NewBookPublisher" Margin="0,0,0,5" Width="200" DisplayMemberPath="." Text="Wydawnictwo"/>
+                <ComboBox x:Name="NewBookGenre" Margin="0,0,0,5" Width="200" DisplayMemberPath="." Text="Dziedzina"/>
                 <Button Content="Dodaj" Click="Dodaj_Click" Width="100" Margin="0,10,0,0"/>
                 <Button Content="Anuluj" Click="Anuluj_Click" Width="100"/>
 

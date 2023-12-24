@@ -90,19 +90,23 @@ public class Database
         }
         return results;
     }
-    async public Task<List<string>> GetAuthors()
+    async public Task<List<AutorDto>> GetAuthors()
     {
-        List<string> authors = new List<string>();
+        List<AutorDto> authors = new List<AutorDto>();
         try
         {
-            var sql = "SELECT CONCAT(imie, ' ', nazwisko) AS author_name FROM Autor";
+            var sql = "SELECT autor_id, CONCAT(imie, ' ', nazwisko) AS author_name FROM Autor";
             using (var cmd = new NpgsqlCommand(sql, _dbConnection))
             {
                 using (var reader = await cmd.ExecuteReaderAsync())
                 {
                     while (reader.Read())
                     {
-                        authors.Add(reader["author_name"].ToString());
+                        authors.Add(new AutorDto
+                        {
+                            Id = Convert.ToInt32(reader["autor_id"]),
+                            Name = reader["author_name"].ToString()
+                        });
                     }
                 }
             }
@@ -113,20 +117,99 @@ public class Database
         }
         return authors;
     }
+    public async Task<List<WydawnictwoDto>> GetPublishers()
+    {
+        List<WydawnictwoDto> publishers = new List<WydawnictwoDto>();
+        try
+        {
+            var sql = "SELECT wydawnictwo_id, nazwa FROM Wydawnictwo";
+            using (var cmd = new NpgsqlCommand(sql, _dbConnection))
+            {
+                using (var reader = await cmd.ExecuteReaderAsync())
+                {
+                    while (reader.Read())
+                    {
+                        var publisher = new WydawnictwoDto
+                        {
+                            Id = Convert.ToInt32(reader["wydawnictwo_id"]),
+                            Nazwa = reader["nazwa"].ToString()
+                        };
+                        publishers.Add(publisher);
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+        return publishers;
+    }
+    public async Task<List<DziedzinaDto>> GetGenres()
+    {
+        List<DziedzinaDto> genres = new List<DziedzinaDto>();
+        try
+        {
+            var sql = "SELECT dziedzina_id, nazwa FROM Dziedzina";
+            using (var cmd = new NpgsqlCommand(sql, _dbConnection))
+            {
+                using (var reader = await cmd.ExecuteReaderAsync())
+                {
+                    while (reader.Read())
+                    {
+                        var genre = new DziedzinaDto
+                        {
+                            Id = Convert.ToInt32(reader["dziedzina_id"]),
+                            Nazwa = reader["nazwa"].ToString()
+                        };
+                        genres.Add(genre);
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+        return genres;
+    }
 
-    async public Task AddBook(string tytul, string rok_wydania, string author, string publisher, string genre)
+    async public Task AddBook(string tytul, string rok_wydania, int author_id, int publisher_id, int genre_id)
     {
         try
         {
             if (DateTime.TryParse(rok_wydania, out DateTime parsedDate))
             {
-                using var cmd = new NpgsqlCommand("INSERT INTO ksiazka (tytul, rok_wydania) VALUES (@tytul, @rok_wydania)", _dbConnection);
+                using var cmd = new NpgsqlCommand("INSERT INTO ksiazka (tytul, rok_wydania, wydawnictwo_id, dziedzina_id) VALUES (@tytul, @rok_wydania, @wydawnictwo_id, @dziedzina_id)", _dbConnection);
                 
                 cmd.Parameters.AddWithValue("@tytul", tytul);
                 cmd.Parameters.AddWithValue("@rok_wydania", NpgsqlDbType.Date, parsedDate);
+                cmd.Parameters.AddWithValue("@wydawnictwo_id", publisher_id);
+                cmd.Parameters.AddWithValue("@dziedzina_id", genre_id);
+                object result = await cmd.ExecuteNonQueryAsync();
 
-                int rowsAffected = await cmd.ExecuteNonQueryAsync();
-                Console.WriteLine($"Inserted {rowsAffected} row(s)");
+                var selectSql = "SELECT ksiazka_id FROM ksiazka WHERE tytul = @tytul AND rok_wydania = @rok_wydania AND wydawnictwo_id = @wydawnictwo_id AND dziedzina_id = @dziedzina_id";
+
+                using var selectCmd = new NpgsqlCommand(selectSql, _dbConnection);
+                selectCmd.Parameters.AddWithValue("@tytul", tytul);
+                selectCmd.Parameters.AddWithValue("@rok_wydania", NpgsqlDbType.Date, parsedDate);
+                selectCmd.Parameters.AddWithValue("@wydawnictwo_id", publisher_id);
+                selectCmd.Parameters.AddWithValue("@dziedzina_id", genre_id);
+                int ksiazkaId = (int)(await selectCmd.ExecuteScalarAsync() ?? -1);
+
+            if (ksiazkaId != 0) 
+                {
+                    using var cmd2 = new NpgsqlCommand("INSERT INTO ksiazka_autor VALUES(@ksiazka_id, @autor_id)", _dbConnection);
+                    cmd2.Parameters.AddWithValue("@ksiazka_id", ksiazkaId);     
+                    cmd2.Parameters.AddWithValue("@autor_id", author_id);
+                    await cmd2.ExecuteNonQueryAsync();
+
+                    Console.WriteLine("Inserted data successfully!");
+                }
+                else
+                {
+                    Console.WriteLine("Failed to insert data into 'ksiazka' table.");
+                }
             }
             else
             {
