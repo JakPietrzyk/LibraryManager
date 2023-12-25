@@ -35,17 +35,9 @@
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
-                        <Button Content="Zaloguj się" Grid.Row="0" Click="PokazWyszukiwarke_Click"  Width="150" Height="25"/>
-                        <Button Content="Zarejestruj się" Grid.Row="1" Click="PokazWyszukiwarke_Click"  Width="150" Height="25"/>
+                        <Button Content="Zaloguj się" Grid.Row="0" Click="PokazLogowanie_Click"  Width="150" Height="25"/>
+                        <Button Content="Zarejestruj się" Grid.Row="1" Click="Zarejestruj_Click"  Width="150" Height="25"/>
                     </Grid>
-
-                    <!--<Grid>
-                        <ScrollViewer VerticalScrollBarVisibility="Auto">
-                            <DataGrid x:Name="AllBooksDataGrid" Margin="20" AutoGenerateColumns="True" 
-                                      Visibility="Collapsed" CanUserSortColumns="False" Width="Auto"  
-                                      HorizontalAlignment="Center" VerticalAlignment="Stretch"/>
-                        </ScrollViewer>
-                    </Grid>-->
                 </Grid>
             </StackPanel>
         </Grid>
@@ -59,7 +51,24 @@
                 <ComboBox x:Name="NewBookGenre" Margin="0,0,0,5" Width="200" DisplayMemberPath="." Text="Dziedzina"/>
                 <Button Content="Dodaj" Click="Dodaj_Click" Width="100" Margin="0,10,0,0"/>
                 <Button Content="Anuluj" Click="Anuluj_Click" Width="100"/>
-
+            </StackPanel>
+        </Grid>
+        <Grid x:Name="RejestracjaGrid" Visibility="Collapsed">
+            <StackPanel>
+                <TextBox x:Name="NowyCzytelnikImie" Margin="0,0,0,5" Width="200" Text="Imie"/>
+                <TextBox x:Name="NowyCzytelnikNazwisko" Margin="0,0,0,5" Width="200" Text="Nazwisko"/>
+                <TextBox x:Name="NowyCzytelnikAdres" Margin="0,0,0,5" Width="200" Text="Adres"/>
+                <TextBox x:Name="NowyCzytelnikEmail" Margin="0,0,0,5" Width="200" Text="Email"/>
+                <TextBox x:Name="NowyCzytelnikTelefon" Margin="0,0,0,5" Width="200" Text="Telefon"/>
+                <Button x:Name="PrzyciskZarejestruj" Content="Zarejestruj" Width="100" Click="PrzyciskZarejestruj_Click" Margin="0,10,0,0"/>
+                <Button x:Name="AnulRejestracje" Content="Anuluj" Width="100" Click="AnulujWyszukiwanie_Click" />
+            </StackPanel>
+        </Grid>
+        <Grid x:Name="LogowanieGrid" Visibility="Collapsed">
+            <StackPanel>
+                <ComboBox x:Name="CzytelnicyComboBox" Margin="0,0,0,5" Width="200" DisplayMemberPath="." Text="Czytelnicy"/>                
+                <Button x:Name="PrzyciskZaloguj" Content="Zaloguj" Width="100" Click="PrzyciskZaloguj_Click" Margin="0,10,0,0"/>
+                <Button x:Name="AnulujLogowanie" Content="Anuluj" Width="100" Click="AnulujWyszukiwanie_Click" />
             </StackPanel>
         </Grid>
         <Grid x:Name="WyszukiwarkaKsiazek" Visibility="Collapsed">
@@ -85,5 +94,6 @@
                 </Grid>
             </StackPanel>
         </Grid>
+
     </Grid>
 </Window>

@@ -29,8 +29,6 @@ namespace projekt
         }
         private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            //var actualSize = AllBooksDataGrid.Height;
-            //AllBooksDataGrid.Height = ActualHeight - 150;
             WyszukiwaneKsiazkiGrid.Height = ActualHeight - 200;
         }
 
@@ -41,6 +39,7 @@ namespace projekt
             await DisplayAuthors();
             await DisplayPublishers();
             await DisplayGenres();
+            await WyswietlCzytelnikow();
         }
         async Task DisplayAuthors()
         {
@@ -76,7 +75,19 @@ namespace projekt
             SortowaniePoDziedzinie.DisplayMemberPath = "Nazwa";
             SortowaniePoDziedzinie.SelectedValuePath = "Id";
         }
+        async Task WyswietlCzytelnikow()
+        {
+            var czytelnicy = await _database.GetCzytelnicy();
 
+            CzytelnicyComboBox.ItemsSource = czytelnicy.Select(c => new
+            {
+                Id = c.Id,
+                PelneImieNazwisko = $"{c.Imie} {c.Nazwisko}"
+            }).ToList();
+
+            CzytelnicyComboBox.DisplayMemberPath = "PelneImieNazwisko";
+            CzytelnicyComboBox.SelectedValuePath = "Id";
+        }
         private void listBox1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
 
@@ -157,9 +168,9 @@ namespace projekt
         
         private void AnulujWyszukiwanie_Click(object sender, RoutedEventArgs e)
         {
+            CollapseAll();
             MainGrid.Visibility = Visibility.Visible;
-            DodajKsiazkeGrid.Visibility = Visibility.Collapsed;
-            WyszukiwarkaKsiazek.Visibility = Visibility.Collapsed;
+
         }
         private async void WyszukiwaneKsiazkiGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -189,6 +200,47 @@ namespace projekt
         private void PrzyciskWypozycz_Click(object sender, RoutedEventArgs e)
         {
 
+        }
+        private void CollapseAll()
+        {
+            MainGrid.Visibility = Visibility.Collapsed;
+            DodajKsiazkeGrid.Visibility = Visibility.Collapsed;
+            WyszukiwarkaKsiazek.Visibility = Visibility.Collapsed;
+            RejestracjaGrid.Visibility = Visibility.Collapsed;
+            LogowanieGrid.Visibility = Visibility.Collapsed;
+        }
+        private void Zarejestruj_Click(object sender, RoutedEventArgs e)
+        {
+            CollapseAll();
+            RejestracjaGrid.Visibility = Visibility.Visible;
+        }
+        private async void PrzyciskZarejestruj_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string imie = NowyCzytelnikImie.Text;
+                string nazwisko = NowyCzytelnikNazwisko.Text;
+                string adres = NowyCzytelnikAdres.Text;
+                string email = NowyCzytelnikEmail.Text;
+                string telefon = NowyCzytelnikTelefon.Text;
+                await _database.DodajCzytelnika(imie, nazwisko, adres, email, telefon);
+                CollapseAll();
+                MainGrid.Visibility = Visibility.Visible;
+            }
+            catch (Exception ex)
+            {
+
+            }
+        }
+        private void PrzyciskZaloguj_Click(object sender, RoutedEventArgs e)
+        {
+            CollapseAll();
+            MainGrid.Visibility = Visibility.Visible;
+        }
+        private void PokazLogowanie_Click(object sender, RoutedEventArgs e)
+        {
+            CollapseAll();
+            LogowanieGrid.Visibility = Visibility.Visible;
         }
     }
 }

@@ -8,6 +8,7 @@ using NpgsqlTypes;
 using System.Linq;
 using LibraryManager.Dtos;
 using System.Text;
+using System.Globalization;
 
 public class Database
 {
@@ -25,6 +26,39 @@ public class Database
         { 
             Console.WriteLine(ex.Message);
         }
+    }
+    public async Task<List<CzytelnikDto>> GetCzytelnicy()
+    {
+        List<CzytelnikDto> results = new List<CzytelnikDto>();
+        try
+        {
+            string sql = "SELECT * FROM czytelnik";
+
+
+            using (var cmd = new NpgsqlCommand(sql, _dbConnection))
+            {
+                using (var reader = await cmd.ExecuteReaderAsync())
+                {
+                    while (reader.Read())
+                    {
+                        results.Add(new CzytelnikDto
+                        {
+                            Id = (int)reader["czytelnik_id"],
+                            Imie = reader["imie"].ToString(),
+                            Nazwisko = reader["nazwisko"].ToString(),
+                            Adres = reader["adres"].ToString(),
+                            Email = reader["email"].ToString(),
+                            Telefon = reader["telefon"].ToString()
+                        });
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+        return results;
     }
     async public Task<List<KsiazkaDto>> GetAllBooks(int? sortby = null, string tytul = null)
     {
@@ -261,5 +295,24 @@ public class Database
             Console.WriteLine(ex.Message);
         }
     }
+    public async Task DodajCzytelnika(string imie, string nazwisko, string adres, string email, string telefon)
+    {
+        try
+        {
+                using var cmd = new NpgsqlCommand("INSERT INTO Czytelnik (imie, nazwisko, adres, email, telefon) VALUES (@imie, @nazwisko, @adres, @email, @telefon)", _dbConnection);
+                cmd.Parameters.AddWithValue("@imie", imie);
+                cmd.Parameters.AddWithValue("@nazwisko", nazwisko);
+                cmd.Parameters.AddWithValue("@adres", adres);
+                cmd.Parameters.AddWithValue("@email", email);
+                cmd.Parameters.AddWithValue("@telefon", telefon);
+                var result = await cmd.ExecuteNonQueryAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+
 
 }
