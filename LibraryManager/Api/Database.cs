@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using NpgsqlTypes;
 using System.Linq;
 using LibraryManager.Dtos;
+using System.Text;
 
 public class Database
 {
@@ -25,33 +26,48 @@ public class Database
             Console.WriteLine(ex.Message);
         }
     }
-    async public Task<List<KsiazkaDto>> GetAllBooks()
+    async public Task<List<KsiazkaDto>> GetAllBooks(int? sortby = null, string tytul = null)
     {
-        List<KsiazkaDto> results = new();
-            try
+        List<KsiazkaDto> results = new List<KsiazkaDto>();
+        try
+        {
+            string sql = "SELECT * FROM ksiazka";
+
+            if (sortby != null)
+                sql = "SELECT * FROM Ksiazka WHERE dziedzina_id = @dziedzinaId";
+            if(tytul != null)
+                sql = "SELECT * FROM Ksiazka WHERE tytul LIKE @tytul";
+
+            using (var cmd = new NpgsqlCommand(sql, _dbConnection))
             {
-                var sql = "SELECT * FROM ksiazka";
-                using (var cmd = new NpgsqlCommand(sql, _dbConnection))
+                if (sortby != null)
+                    cmd.Parameters.AddWithValue("@dziedzinaId", sortby);
+                if(tytul != null)
                 {
-                    using (var reader = await cmd.ExecuteReaderAsync())
+                    tytul = "%" + tytul + "%";
+                    cmd.Parameters.AddWithValue("@tytul", tytul);
+                }
+                using (var reader = await cmd.ExecuteReaderAsync())
+                {
+                    while (reader.Read())
                     {
-                        while (reader.Read())
+                        results.Add(new KsiazkaDto
                         {
-                            string data = $"{reader["tytul"]} - {reader["rok_wydania"]}";
-                            results.Add(new KsiazkaDto { 
-                                Tytul = reader["tytul"].ToString(), 
-                                RokWydania = reader["rok_wydania"].ToString() 
-                            });
-                        }
+                            Id = (int)reader["ksiazka_id"],
+                            Tytul = reader["tytul"].ToString(),
+                            RokWydania = reader["rok_wydania"].ToString()
+                        });
                     }
                 }
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
         return results;
     }
+
     async public Task<List<RentalDto>> GetAllRentals()
     {
         List<RentalDto> results = new List<RentalDto>();
@@ -172,6 +188,30 @@ public class Database
             Console.WriteLine(ex.Message);
         }
         return genres;
+    }
+    
+    public async Task<bool> GetAvailability(int ksiazka_id)
+    {
+        try
+        {
+            var sql = "SELECT dostepnosc FROM Ksiazka WHERE ksiazka_id = @ksiazka_id";
+            using (var cmd = new NpgsqlCommand(sql, _dbConnection))
+            {
+                using (var reader = await cmd.ExecuteReaderAsync())
+                {
+                    while (reader.Read())
+                    {
+                        var dostepnosc = (bool)reader["dostepnosc"];
+                        return dostepnosc;
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+        return false;
     }
 
     async public Task AddBook(string tytul, string rok_wydania, int author_id, int publisher_id, int genre_id)

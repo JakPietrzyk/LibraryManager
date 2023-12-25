@@ -1,6 +1,7 @@
 ﻿using LibraryManager.Dtos;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Security.Policy;
 using System.Text;
@@ -26,23 +27,11 @@ namespace projekt
             SetDataToComboBoxes();
             SizeChanged += MainWindow_SizeChanged;
         }
-        private async void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e)
+        private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            await Task.Delay(100); // Odroczenie przetwarzania na później, aby uniknąć natychmiastowych zmian
-
-            if (MainGrid.RowDefinitions.Count > 0 && ActualHeight > 0)
-            {
-                double availableHeight = ActualHeight - MainGrid.Margin.Top - MainGrid.Margin.Bottom - MainGrid.RowDefinitions[0].ActualHeight;
-
-                if (availableHeight > 0)
-                {
-                    int rowHeight = 25; // Wysokość wiersza
-
-                    int rowsCount = (int)(availableHeight / rowHeight);
-
-                    AllBooksDataGrid.MaxHeight = rowsCount * rowHeight;
-                }
-            }
+            //var actualSize = AllBooksDataGrid.Height;
+            //AllBooksDataGrid.Height = ActualHeight - 150;
+            WyszukiwaneKsiazkiGrid.Height = ActualHeight - 200;
         }
 
 
@@ -71,9 +60,21 @@ namespace projekt
         async Task DisplayGenres()
         {
             var genres = await _database.GetGenres();
+            var genresSortowanie = new List<DziedzinaDto>();
+            genresSortowanie.AddRange(genres);
             NewBookGenre.ItemsSource = genres;
             NewBookGenre.DisplayMemberPath = "Nazwa";
             NewBookGenre.SelectedValuePath = "Id";
+            genresSortowanie.Insert(0, new DziedzinaDto()
+            {
+                Id = 0,
+                Nazwa = "<Brak>"
+            });
+            SortowaniePoDziedzinie.ItemsSource = genresSortowanie;
+            SortowaniePoDziedzinie.SelectedIndex = 0;
+
+            SortowaniePoDziedzinie.DisplayMemberPath = "Nazwa";
+            SortowaniePoDziedzinie.SelectedValuePath = "Id";
         }
 
         private void listBox1_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -94,22 +95,30 @@ namespace projekt
 
         private async void Dodaj_Click(object sender, RoutedEventArgs e)
         {
-            int authorId = (int)NewBookAuthor.SelectedValue;
-            int publisherId = (int)NewBookPublisher.SelectedValue;
-            int genreId = (int)NewBookGenre.SelectedValue;
-            string title = NewBookTitle.Text;
-            string date = NewBookDate.Text;
-            await _database.AddBook(title, date, authorId, publisherId, genreId);
-            MainGrid.Visibility = Visibility.Visible;
-            DodajKsiazkeGrid.Visibility = Visibility.Collapsed;
+            try
+            {
+                int authorId = (int)NewBookAuthor.SelectedValue;
+                int publisherId = (int)NewBookPublisher.SelectedValue;
+                int genreId = (int)NewBookGenre.SelectedValue;
+                string title = NewBookTitle.Text;
+                string date = NewBookDate.Text;
+                await _database.AddBook(title, date, authorId, publisherId, genreId);
+                MainGrid.Visibility = Visibility.Visible;
+                DodajKsiazkeGrid.Visibility = Visibility.Collapsed;
+            }
+            catch(Exception ex)
+            {
+                MessageBox.Show("Proszę wypełnić wszystkie pola poprawnie.");
+            }
+
         }
 
         private async void PokazKsiazki_Click(object sender, RoutedEventArgs e)
         {
             var books = await _database.GetAllBooks(); 
 
-            AllBooksDataGrid.ItemsSource = books;
-            AllBooksDataGrid.Visibility = Visibility.Visible;
+            //AllBooksDataGrid.ItemsSource = books;
+            //AllBooksDataGrid.Visibility = Visibility.Visible;
         }
 
         private async void PokazWypozyczenia_Click(object sender, RoutedEventArgs e)
@@ -117,14 +126,69 @@ namespace projekt
             try
             {
                 List<RentalDto> rentals = await _database.GetAllRentals();
-                AllBooksDataGrid.ItemsSource = rentals;
-                AllBooksDataGrid.Visibility = Visibility.Visible;
+                //AllBooksDataGrid.ItemsSource = rentals;
+                //AllBooksDataGrid.Visibility = Visibility.Visible;
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
             }
         }
-    }
+        private void PokazWyszukiwarke_Click(object sender, RoutedEventArgs e)
+        {
+            MainGrid.Visibility = Visibility.Collapsed;
+            DodajKsiazkeGrid.Visibility = Visibility.Collapsed;
+            WyszukiwarkaKsiazek.Visibility = Visibility.Visible;
+        }
+        private async void WyszukajKsiazke_Click(object sender, RoutedEventArgs e)
+        {
+            var tytulDoWyszukania = WyszukiwanyTytul.Text;
+            List<KsiazkaDto> books;
+            if (SortowaniePoDziedzinie.SelectedIndex > 0)
+                books = await _database.GetAllBooks((int)SortowaniePoDziedzinie.SelectedValue);
+            else if (!string.IsNullOrEmpty(tytulDoWyszukania))
+                books = await _database.GetAllBooks(null, tytulDoWyszukania);
+            else
+                books = await _database.GetAllBooks();
 
+            WyszukiwaneKsiazkiGrid.ItemsSource = books;
+            WyszukiwaneKsiazkiGrid.Visibility = Visibility.Visible;
+        }
+        
+        private void AnulujWyszukiwanie_Click(object sender, RoutedEventArgs e)
+        {
+            MainGrid.Visibility = Visibility.Visible;
+            DodajKsiazkeGrid.Visibility = Visibility.Collapsed;
+            WyszukiwarkaKsiazek.Visibility = Visibility.Collapsed;
+        }
+        private async void WyszukiwaneKsiazkiGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (e.AddedItems.Count > 0)
+            {
+                var wybranaKsiazka = (KsiazkaDto)WyszukiwaneKsiazkiGrid.SelectedItem;
+                var czyDostepna = await _database.GetAvailability(wybranaKsiazka.Id);
+                string dostepnosc = "";
+                if(czyDostepna)
+                {
+                    dostepnosc = "Dostepna";
+                    PrzyciskWypozycz.Visibility = Visibility.Visible;
+                }
+                else
+                {
+                    dostepnosc = "Brak w bibliotece";
+                    PrzyciskWypozycz.Visibility = Visibility.Collapsed;
+                }
+                WybraneWypozyczenieTextBlock.Text = $"Tytuł: {wybranaKsiazka.Tytul}\nRok: {wybranaKsiazka.RokWydania}\nStan: {dostepnosc}";
+            }
+            else
+            {
+                PrzyciskWypozycz.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private void PrzyciskWypozycz_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+    }
 }
