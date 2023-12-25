@@ -9,23 +9,55 @@ using System.Linq;
 using LibraryManager.Dtos;
 using System.Text;
 using System.Globalization;
+using NLog.Config;
+using NLog;
 
 public class Database
 {
     private const string _connectionString = DbConstants.ConnectionString;
     private NpgsqlConnection? _dbConnection;
+    private static NLog.Logger _logger;
     public Database() 
     {
-        try 
+        _logger =  NLog.LogManager.GetCurrentClassLogger(); 
+        _logger.Info("This is an informational log message");
+
+        try
         {
             _dbConnection = new NpgsqlConnection(_connectionString);
             _dbConnection.Open();
-            Console.WriteLine("Connected to PostgreSQL");
+            _logger.Info("Connected to PostgreSQL");
         }
         catch (NpgsqlException ex) 
         { 
-            Console.WriteLine(ex.Message);
+            _logger.Error(ex.Message);
         }
+    }
+    public async Task<int> GetEgzemplarzKsiazki(int ksiazkaId)
+    {
+        int result = -1;
+        try
+        {
+            string sql = "SELECT * FROM egzemplarz WHERE ksiazka_id = @ksiazka_id LIMIT 1";
+
+
+            using (var cmd = new NpgsqlCommand(sql, _dbConnection))
+            {
+                cmd.Parameters.AddWithValue("@ksiazka_id", ksiazkaId);
+                using (var reader = await cmd.ExecuteReaderAsync())
+                {
+                    while (reader.Read())
+                    {
+                        result = (int)reader["egzemplarz_id"];
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex.Message);
+        }
+        return result;
     }
     public async Task<List<CzytelnikDto>> GetCzytelnicy()
     {
@@ -56,7 +88,7 @@ public class Database
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex.Message);
+            _logger.Error(ex.Message);
         }
         return results;
     }
@@ -97,12 +129,12 @@ public class Database
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex.Message);
+            _logger.Error(ex.Message);
         }
         return results;
     }
 
-    async public Task<List<RentalDto>> GetAllRentals()
+    async public Task<List<RentalDto>> GetAllRentals(int czytelnik_id)
     {
         List<RentalDto> results = new List<RentalDto>();
         try
@@ -112,12 +144,14 @@ public class Database
                 "FROM wypozyczenie w " +
                 "JOIN egzemplarz e USING (egzemplarz_id) " +
                 "JOIN ksiazka k USING (ksiazka_id) " +
-                "JOIN czytelnik c USING (czytelnik_id);";
+                "JOIN czytelnik c USING (czytelnik_id)" +
+                "WHERE czytelnik_id = @czytelnik_id;";
 
             using (var cmd = new NpgsqlCommand(sql, _dbConnection))
             {
                 using (var reader = await cmd.ExecuteReaderAsync())
                 {
+                    cmd.Parameters.AddWithValue("@czytelnik_id", czytelnik_id);
                     while (reader.Read())
                     {
                         RentalDto rental = new RentalDto
@@ -136,7 +170,7 @@ public class Database
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex.Message);
+            _logger.Error(ex.Message);
         }
         return results;
     }
@@ -163,7 +197,7 @@ public class Database
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex.Message);
+            _logger.Error(ex.Message);
         }
         return authors;
     }
@@ -191,7 +225,7 @@ public class Database
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex.Message);
+            _logger.Error(ex.Message);
         }
         return publishers;
     }
@@ -219,7 +253,7 @@ public class Database
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex.Message);
+            _logger.Error(ex.Message);
         }
         return genres;
     }
@@ -243,7 +277,7 @@ public class Database
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex.Message);
+            _logger.Error(ex.Message);
         }
         return false;
     }
@@ -278,21 +312,21 @@ public class Database
                     cmd2.Parameters.AddWithValue("@autor_id", author_id);
                     await cmd2.ExecuteNonQueryAsync();
 
-                    Console.WriteLine("Inserted data successfully!");
+                    _logger.Debug("Inserted data successfully!");
                 }
                 else
                 {
-                    Console.WriteLine("Failed to insert data into 'ksiazka' table.");
+                    _logger.Error("Failed to insert data into 'ksiazka' table.");
                 }
             }
             else
             {
-                Console.WriteLine("Invalid date format for rokWydania.");
+                _logger.Error("Invalid date format for rokWydania.");
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex.Message);
+            _logger.Error(ex.Message);
         }
     }
     public async Task DodajCzytelnika(string imie, string nazwisko, string adres, string email, string telefon)
@@ -309,10 +343,23 @@ public class Database
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex.Message);
+            _logger.Error(ex.Message);
         }
     }
 
-
-
+    public async Task WypozyczEgzemplarzKsiazki(int czytelnik_id, int egzemplarz_id)
+    {
+        try
+        {
+            using var cmd = new NpgsqlCommand("INSERT INTO Wypozyczenie (czytelnik_id, egzemplarz_id, data_wypozyczenia) VALUES (@czytelnik_id, @egzemplarz_id, @data_wypozyczenia)", _dbConnection);
+            cmd.Parameters.AddWithValue("@czytelnik_id", czytelnik_id);
+            cmd.Parameters.AddWithValue("@egzemplarz_id", egzemplarz_id);
+            cmd.Parameters.AddWithValue("@data_wypozyczenia", NpgsqlDbType.Date, DateTime.Now);
+            var result = await cmd.ExecuteNonQueryAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex.Message);
+        }
+    }
 }

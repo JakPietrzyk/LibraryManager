@@ -136,7 +136,10 @@ namespace projekt
         {
             try
             {
-                List<RentalDto> rentals = await _database.GetAllRentals();
+                List<RentalDto> rentals;
+                var czytelnikId = (int)CzytelnicyComboBox.SelectedValue;
+                if(czytelnikId > 0)
+                    rentals = await _database.GetAllRentals(czytelnikId);
                 //AllBooksDataGrid.ItemsSource = rentals;
                 //AllBooksDataGrid.Visibility = Visibility.Visible;
             }
@@ -197,9 +200,20 @@ namespace projekt
             }
         }
 
-        private void PrzyciskWypozycz_Click(object sender, RoutedEventArgs e)
+        private async void PrzyciskWypozycz_Click(object sender, RoutedEventArgs e)
         {
+            try
+            {
+                var ksiazkaId = ((KsiazkaDto)WyszukiwaneKsiazkiGrid.SelectedItem).Id;
+                var czytelnikId = (int)CzytelnicyComboBox.SelectedValue;
+                var egzemplarzId = await _database.GetEgzemplarzKsiazki(ksiazkaId);
+                await _database.WypozyczEgzemplarzKsiazki(czytelnikId, egzemplarzId);
 
+            }
+            catch(Exception ex)
+            {
+
+            }
         }
         private void CollapseAll()
         {
