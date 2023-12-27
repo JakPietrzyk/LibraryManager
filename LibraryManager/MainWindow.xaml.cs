@@ -132,22 +132,7 @@ namespace projekt
             //AllBooksDataGrid.Visibility = Visibility.Visible;
         }
 
-        private async void PokazWypozyczenia_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                List<RentalDto> rentals;
-                var czytelnikId = (int)CzytelnicyComboBox.SelectedValue;
-                if(czytelnikId > 0)
-                    rentals = await _database.GetAllRentals(czytelnikId);
-                //AllBooksDataGrid.ItemsSource = rentals;
-                //AllBooksDataGrid.Visibility = Visibility.Visible;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-            }
-        }
+
         private void PokazWyszukiwarke_Click(object sender, RoutedEventArgs e)
         {
             MainGrid.Visibility = Visibility.Collapsed;
@@ -222,6 +207,7 @@ namespace projekt
             WyszukiwarkaKsiazek.Visibility = Visibility.Collapsed;
             RejestracjaGrid.Visibility = Visibility.Collapsed;
             LogowanieGrid.Visibility = Visibility.Collapsed;
+            WypozyczeniaGrid.Visibility = Visibility.Collapsed;
         }
         private void Zarejestruj_Click(object sender, RoutedEventArgs e)
         {
@@ -256,5 +242,60 @@ namespace projekt
             CollapseAll();
             LogowanieGrid.Visibility = Visibility.Visible;
         }
+        private async void WypozyczoneKsiazki_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (e.AddedItems.Count > 0)
+            {
+                var wybranaKsiazka = (RentalDto)WypozyczoneKsiazki.SelectedItem;
+                PrzyciskZwrotEgzemplarza.Visibility = Visibility.Visible;
+                WybranyZwrotTextBlock.Text = $"Tytuł: {wybranaKsiazka.Tytul}\nRok: {wybranaKsiazka.RokWydania}";
+            }
+            else
+            {
+                PrzyciskZwrotEgzemplarza.Visibility = Visibility.Collapsed;
+            }
+        }
+        private async Task ShowRentals()
+        {
+            try
+            {
+                List<RentalDto> rentals = new();
+                var czytelnikId = (int)CzytelnicyComboBox.SelectedValue;
+                if (czytelnikId > 0)
+                    rentals = await _database.GetAllRentals(czytelnikId);
+                CollapseAll();
+                WypozyczeniaGrid.Visibility = Visibility.Visible;
+                WypozyczoneKsiazki.ItemsSource = rentals;
+                WypozyczoneKsiazki.DisplayMemberPath = "Tytul";
+                WypozyczoneKsiazki.SelectedValuePath = "Id";
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+        }
+
+        private async void PokazWypozyczenia_Click(object sender, RoutedEventArgs e)
+        {
+            await ShowRentals();
+        }
+
+        private async void PrzyciskZwrotEgzemplarza_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var wypozyczenieId = ((RentalDto)WypozyczoneKsiazki.SelectedItem)?.Id;
+                if (wypozyczenieId != null)
+                {
+                    await _database.DodajDateZwrotu((int)wypozyczenieId);
+                    await ShowRentals();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+        }
+
     }
 }

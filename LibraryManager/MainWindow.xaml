@@ -94,6 +94,30 @@
                 </Grid>
             </StackPanel>
         </Grid>
-
+        <Grid x:Name="WypozyczeniaGrid" Visibility="Collapsed" VerticalAlignment="Stretch">
+            <StackPanel>
+                <Label Content="Wypozyczenia" FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
+                <Grid VerticalAlignment="Stretch">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*" />
+                        <ColumnDefinition Width="1*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+                        <DataGrid x:Name="WypozyczoneKsiazki" Margin="20" AutoGenerateColumns="True" 
+                                  Visibility="Visible" CanUserSortColumns="False" Width="Auto"  
+                                  HorizontalAlignment="Center" VerticalAlignment="Stretch"
+                                  IsReadOnly="True" SelectionChanged="WypozyczoneKsiazki_SelectionChanged" />
+                    </ScrollViewer>
+                    <StackPanel Grid.Column="1">
+                        <TextBlock x:Name="WybranyZwrotTextBlock"  TextWrapping="Wrap" Margin="20" VerticalAlignment="Top"/>
+                        <Button x:Name="PrzyciskZwrotEgzemplarza" Content="Zwrot" Height="50" Width="100" Visibility="Collapsed" Click="PrzyciskZwrotEgzemplarza_Click" Margin="20"/>
+                        <Button Content="Anuluj" Click="AnulujWyszukiwanie_Click" Width="100"/>
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
+        </Grid>
     </Grid>
 </Window>

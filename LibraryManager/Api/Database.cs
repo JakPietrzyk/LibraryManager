@@ -140,30 +140,35 @@ public class Database
         try
         {
             var sql =
-                "SELECT nazwisko, imie, tytul, data_wypozyczenia, data_zwrotu, rok_wydania " +
+                "SELECT wypozyczenie_id, nazwisko, imie, tytul, data_wypozyczenia, data_zwrotu, rok_wydania " +
                 "FROM wypozyczenie w " +
                 "JOIN egzemplarz e USING (egzemplarz_id) " +
                 "JOIN ksiazka k USING (ksiazka_id) " +
-                "JOIN czytelnik c USING (czytelnik_id)" +
-                "WHERE czytelnik_id = @czytelnik_id;";
+                "JOIN czytelnik c USING (czytelnik_id) " +
+                "WHERE czytelnik_id = @czytelnik_id";
 
             using (var cmd = new NpgsqlCommand(sql, _dbConnection))
             {
+                cmd.Parameters.AddWithValue("@czytelnik_id", czytelnik_id);
                 using (var reader = await cmd.ExecuteReaderAsync())
                 {
-                    cmd.Parameters.AddWithValue("@czytelnik_id", czytelnik_id);
                     while (reader.Read())
                     {
+
                         RentalDto rental = new RentalDto
                         {
+                            Id = (int)reader["wypozyczenie_id"],
                             Nazwisko = reader["nazwisko"].ToString(),
                             Imie = reader["imie"].ToString(),
                             Tytul = reader["tytul"].ToString(),
                             DataWypozyczenia = Convert.ToDateTime(reader["data_wypozyczenia"]),
-                            DataZwrotu = Convert.ToDateTime(reader["data_zwrotu"]),
                             RokWydania = Convert.ToDateTime(reader["rok_wydania"]).Date
                         };
+                        if(reader["data_zwrotu"] is not DBNull)
+                            rental.DataZwrotu = Convert.ToDateTime(reader["data_zwrotu"]);
+
                         results.Add(rental);
+
                     }
                 }
             }
@@ -356,6 +361,22 @@ public class Database
             cmd.Parameters.AddWithValue("@egzemplarz_id", egzemplarz_id);
             cmd.Parameters.AddWithValue("@data_wypozyczenia", NpgsqlDbType.Date, DateTime.Now);
             var result = await cmd.ExecuteNonQueryAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex.Message);
+        }
+    }
+
+    public async Task DodajDateZwrotu(int wypozyczenie_id)
+    {
+        try
+        {
+            using var cmd = new NpgsqlCommand("UPDATE wypozyczenie SET data_zwrotu = @data_zwrotu WHERE wypozyczenie_id = @wypozyczenie_id", _dbConnection);
+            cmd.Parameters.AddWithValue("@wypozyczenie_id", wypozyczenie_id);
+            cmd.Parameters.AddWithValue("@data_zwrotu", NpgsqlDbType.Date, DateTime.Now);
+            await cmd.ExecuteNonQueryAsync();
+
         }
         catch (Exception ex)
         {
