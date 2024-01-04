@@ -11,6 +11,7 @@ using System.Text;
 using System.Globalization;
 using NLog.Config;
 using NLog;
+using System.Windows;
 
 public class Database
 {
@@ -334,6 +335,62 @@ public class Database
             _logger.Error(ex.Message);
         }
     }
+    public async Task AddAuthor(string imie, string nazwisko)
+    {
+        try
+        {
+            using var cmd = new NpgsqlCommand("INSERT INTO Autor (imie, nazwisko) VALUES (@imie, @nazwisko)", _dbConnection);
+            cmd.Parameters.AddWithValue("@imie", imie);
+            cmd.Parameters.AddWithValue("@nazwisko", nazwisko);
+            await cmd.ExecuteNonQueryAsync();
+        }
+        catch(Exception ex)
+        {
+            _logger.Error(ex.Message);
+        }
+    }
+    public async Task AddPublisher(string nazwa, string adres)
+    {
+        try
+        {
+            using var cmd = new NpgsqlCommand("INSERT INTO Wydawnictwo (nazwa, adres) VALUES (@nazwa, @adres)", _dbConnection);
+            cmd.Parameters.AddWithValue("@nazwa", nazwa);
+            cmd.Parameters.AddWithValue("@adres", adres);
+            await cmd.ExecuteNonQueryAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex.Message);
+        }
+    }
+    public async Task AddGenre(string nazwa, int dziedzina_nadrzedna_id)
+    {
+        try
+        {
+            using var cmd = new NpgsqlCommand("INSERT INTO Dziedzina (nazwa, dziedzina_nadrzedna_id) VALUES (@nazwa, @dziedzina_nadrzedna_id)", _dbConnection);
+            cmd.Parameters.AddWithValue("@nazwa", nazwa);
+            cmd.Parameters.AddWithValue("@dziedzina_nadrzedna_id", dziedzina_nadrzedna_id);
+            await cmd.ExecuteNonQueryAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex.Message);
+        }
+    }
+    public async Task AddCopyOfBook(int ksiazka_id, string isbn)
+    {
+        try
+        {
+            using var cmd = new NpgsqlCommand("INSERT INTO Egzemplarz (ksiazka_id, isbn) VALUES (@ksiazka_id, @isbn)", _dbConnection);
+            cmd.Parameters.AddWithValue("@ksiazka_id", ksiazka_id);
+            cmd.Parameters.AddWithValue("@isbn", isbn);
+            await cmd.ExecuteNonQueryAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex.Message);
+        }
+    }
     public async Task DodajCzytelnika(string imie, string nazwisko, string adres, string email, string telefon)
     {
         try
@@ -361,6 +418,11 @@ public class Database
             cmd.Parameters.AddWithValue("@egzemplarz_id", egzemplarz_id);
             cmd.Parameters.AddWithValue("@data_wypozyczenia", NpgsqlDbType.Date, DateTime.Now);
             var result = await cmd.ExecuteNonQueryAsync();
+        }
+        catch(PostgresException ex)
+        {
+            if (ex.Message.StartsWith("23503"))
+                MessageBox.Show("Brak dostępnych egzemplarzy");
         }
         catch (Exception ex)
         {

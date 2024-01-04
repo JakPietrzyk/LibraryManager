@@ -15,12 +15,19 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
-                    <Grid x:Name="Dodawanie" Grid.Column="0">
+                    <Grid x:Name="Dodawanie" Grid.Column="0" Margin="0,0,0,-73">
                         <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
                         <Button Content="Dodaj książkę" Grid.Row="0" Click="DodajKsiazke_Click" Width="150" Margin="0,10,0,0" Height="25"/>
+                        <Button Content="Dodaj Autora" Grid.Row="1" Click="DodajAutoraShow_Click" Width="150" Margin="0,10,0,0" Height="25"/>
+                        <Button Content="Dodaj Wydawnictwo" Grid.Row="2" Click="DodajWydawnictwoShow_Click" Width="150" Margin="0,10,0,0" Height="25"/>
+                        <Button Content="Dodaj Dziedzine" Grid.Row="3" Click="DodajDziedzineShow_Click" Width="150" Margin="0,10,0,0" Height="25"/>
+                        <Button Content="Dodaj Egzemplarz" Grid.Row="4" Click="DodajEgzemplarzShow_Click" Width="150" Margin="0,10,0,0" Height="25"/>
                     </Grid>
                     <Grid x:Name="WyswietlanieDanych" Grid.Column="1">
                         <Grid.RowDefinitions>
@@ -50,6 +57,46 @@
                 <ComboBox x:Name="NewBookPublisher" Margin="0,0,0,5" Width="200" DisplayMemberPath="." Text="Wydawnictwo"/>
                 <ComboBox x:Name="NewBookGenre" Margin="0,0,0,5" Width="200" DisplayMemberPath="." Text="Dziedzina"/>
                 <Button Content="Dodaj" Click="Dodaj_Click" Width="100" Margin="0,10,0,0"/>
+                <Button Content="Anuluj" Click="Anuluj_Click" Width="100"/>
+            </StackPanel>
+        </Grid>
+        <Grid x:Name="DodajAutoraGrid" Visibility="Collapsed">
+            <StackPanel Margin="20">
+                <Label Content="Dodaj nowego Autora" FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
+                <TextBox x:Name="NewAutorName" Margin="0,0,0,5" Width="200" Text="Imie"/>
+                <TextBox x:Name="NewAutorSurname" Margin="0,0,0,5" Width="200" Text="Nazwisko"/>
+                <Button Content="Dodaj" Click="DodajAutora_Click" Width="100" Margin="0,10,0,0"/>
+                <Button Content="Anuluj" Click="Anuluj_Click" Width="100"/>
+            </StackPanel>
+        </Grid>
+        <Grid x:Name="DodajWydawnictwoGrid" Visibility="Collapsed">
+            <StackPanel Margin="20">
+                <Label Content="Dodaj nowe Wydawnictwo" FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
+                <TextBox x:Name="NoweWydawnictwoNazwa" Margin="0,0,0,5" Width="200" Text="Nazwa Wydawnictwa"/>
+                <TextBox x:Name="NoweWydawnictwoUlica" Margin="0,0,0,5" Width="200" Text="ul. Michałowskiego"/>
+                <TextBox x:Name="NoweWydawnictwoNumerBudynku" Margin="0,0,0,5" Width="200" Text="9/2"/>
+                <TextBox x:Name="NoweWydawnictwoKodPocztowy" Margin="0,0,0,5" Width="200" Text="31-126"/>
+                <TextBox x:Name="NoweWydawnictwoMiasto" Margin="0,0,0,5" Width="200" Text="Kraków"/>
+                <Button Content="Dodaj" Click="DodajWydawnictwo_Click" Width="100" Margin="0,10,0,0"/>
+                <Button Content="Anuluj" Click="Anuluj_Click" Width="100"/>
+            </StackPanel>
+        </Grid>
+        <Grid x:Name="DodajDziedzineGrid" Visibility="Collapsed">
+            <StackPanel Margin="20">
+                <Label Content="Dodaj nowa dziedzine" FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
+                <TextBox x:Name="NowaDziedzinaNazwa" Margin="0,0,0,5" Width="200" Text="Nazwa dziedziny"/>
+                <ComboBox x:Name="NowaDziedzinaNadrzednaId" Margin="0,0,0,5" Width="200" DisplayMemberPath="."/>
+                <Button Content="Dodaj" Click="DodajDziedzine_Click" Width="100" Margin="0,10,0,0"/>
+                <Button Content="Anuluj" Click="Anuluj_Click" Width="100"/>
+            </StackPanel>
+        </Grid>
+        <Grid x:Name="DodajEgzemplarzGrid" Visibility="Collapsed">
+            <StackPanel Margin="20">
+                <Label Content="Dodaj egzemplarz książki" FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
+                <ComboBox x:Name="NowyEgzemplarzKsiazka" Margin="0,0,0,5" Width="200" DisplayMemberPath="."/>
+                <TextBox x:Name="NowyEgzemplarzISBN" Margin="0,0,0,5" Width="200" Text="0"/>
+                <TextBlock x:Name="InformacjaOBledzie" Text="" Foreground="Red" Margin="10,5,0,0"/>
+                <Button Content="Dodaj" Click="DodajEgzemplarz_Click" Width="100" Margin="0,10,0,0"/>
                 <Button Content="Anuluj" Click="Anuluj_Click" Width="100"/>
             </StackPanel>
         </Grid>

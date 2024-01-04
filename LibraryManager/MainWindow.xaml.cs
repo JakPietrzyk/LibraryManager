@@ -2,9 +2,11 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.IO;
 using System.Linq;
 using System.Security.Policy;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -40,6 +42,14 @@ namespace projekt
             await DisplayPublishers();
             await DisplayGenres();
             await WyswietlCzytelnikow();
+            await DisplayBooks();
+        }
+        async Task DisplayBooks()
+        {
+            var books = await _database.GetAllBooks();
+            NowyEgzemplarzKsiazka.ItemsSource = books;
+            NowyEgzemplarzKsiazka.DisplayMemberPath = "Tytul";
+            NowyEgzemplarzKsiazka.SelectedValuePath = "Id";
         }
         async Task DisplayAuthors()
         {
@@ -74,6 +84,12 @@ namespace projekt
 
             SortowaniePoDziedzinie.DisplayMemberPath = "Nazwa";
             SortowaniePoDziedzinie.SelectedValuePath = "Id";
+
+            NowaDziedzinaNadrzednaId.ItemsSource = genresSortowanie;
+            NowaDziedzinaNadrzednaId.SelectedIndex = 0;
+
+            NowaDziedzinaNadrzednaId.DisplayMemberPath = "Nazwa";
+            NowaDziedzinaNadrzednaId.SelectedValuePath = "Id";
         }
         async Task WyswietlCzytelnikow()
         {
@@ -97,11 +113,31 @@ namespace projekt
             MainGrid.Visibility = Visibility.Collapsed;
             DodajKsiazkeGrid.Visibility = Visibility.Visible;
         }
+        private void DodajAutoraShow_Click(object sender, RoutedEventArgs e)
+        {
+            CollapseAll();
+            DodajAutoraGrid.Visibility = Visibility.Visible;
+        }
 
+        private void DodajWydawnictwoShow_Click(object sender, RoutedEventArgs e)
+        {
+            CollapseAll();
+            DodajWydawnictwoGrid.Visibility = Visibility.Visible;
+        }
+        private void DodajDziedzineShow_Click(object sender, RoutedEventArgs e)
+        {
+            CollapseAll();
+            DodajDziedzineGrid.Visibility = Visibility.Visible;
+        }
+        private void DodajEgzemplarzShow_Click(object sender, RoutedEventArgs e)
+        {
+            CollapseAll();
+            DodajEgzemplarzGrid.Visibility = Visibility.Visible;
+        }
         private void Anuluj_Click(object sender, RoutedEventArgs e)
         {
+            CollapseAll();
             MainGrid.Visibility = Visibility.Visible;
-            DodajKsiazkeGrid.Visibility = Visibility.Collapsed;
         }
 
         private async void Dodaj_Click(object sender, RoutedEventArgs e)
@@ -114,6 +150,7 @@ namespace projekt
                 string title = NewBookTitle.Text;
                 string date = NewBookDate.Text;
                 await _database.AddBook(title, date, authorId, publisherId, genreId);
+                SetDataToComboBoxes();
                 MainGrid.Visibility = Visibility.Visible;
                 DodajKsiazkeGrid.Visibility = Visibility.Collapsed;
             }
@@ -122,6 +159,110 @@ namespace projekt
                 MessageBox.Show("Proszę wypełnić wszystkie pola poprawnie.");
             }
 
+        }
+        private async void DodajAutora_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string authorName = NewAutorName.Text;
+                string authorSurname= NewAutorSurname.Text;
+                await _database.AddAuthor(authorName, authorSurname);
+                SetDataToComboBoxes();
+                CollapseAll();
+                MainGrid.Visibility = Visibility.Visible;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Proszę wypełnić wszystkie pola poprawnie.");
+            }
+        }
+        private async void DodajWydawnictwo_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string name = NoweWydawnictwoNazwa.Text;
+                string street = NoweWydawnictwoUlica.Text;
+                string apartmentNumber = NoweWydawnictwoNumerBudynku.Text;
+                string postcode = NoweWydawnictwoKodPocztowy.Text;
+                string city = NoweWydawnictwoMiasto.Text;
+                string adress = $"{street} {apartmentNumber} {postcode} {city}";
+                await _database.AddPublisher(name, adress);
+                SetDataToComboBoxes();
+                CollapseAll();
+                MainGrid.Visibility = Visibility.Visible;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Proszę wypełnić wszystkie pola poprawnie.");
+            }
+        }
+        private async void DodajDziedzine_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string name = NowaDziedzinaNazwa.Text;
+                int genreId = (int)NowaDziedzinaNadrzednaId.SelectedValue;
+                await _database.AddGenre(name, genreId);
+                SetDataToComboBoxes();
+                CollapseAll();
+                MainGrid.Visibility = Visibility.Visible;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Proszę wypełnić wszystkie pola poprawnie.");
+            }
+        }
+        private bool ValidateISBN(string text)
+        {
+            string pattern = @"^(?:\d{3}-)?\d{1,5}-\d{1,7}-\d{1,7}-[\dX]$";
+            Regex regex = new Regex(pattern);
+
+            if (!regex.IsMatch(text))
+            {
+                InformacjaOBledzie.Text = "Nieprawidłowy format numeru ISBN! Przykład: 978-3-16-148410-0";
+                return false;
+            }
+            else
+            {
+                InformacjaOBledzie.Text = "";
+                return true;
+            }
+        }
+        private async void DodajEgzemplarz_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                int bookId = (int)NowyEgzemplarzKsiazka.SelectedValue;
+                string isbn = NowyEgzemplarzISBN.Text;
+                if (!ValidateISBN(isbn))
+                    throw new InvalidDataException();
+                await _database.AddCopyOfBook(bookId, isbn);
+                SetDataToComboBoxes();
+                CollapseAll();
+                MainGrid.Visibility = Visibility.Visible;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Proszę wypełnić wszystkie pola poprawnie.");
+            }
+        }
+        private void NoweEgzemplarzeIlosc_PreviewTextInput(object sender, System.Windows.Input.TextCompositionEventArgs e)
+        {
+            TextBox textBox = sender as TextBox;
+            string proposedText = textBox.Text + e.Text;
+
+            string pattern = @"^(?:\d{3}-)?\d{1,5}-\d{1,7}-\d{1,7}-[\dX]$";
+            Regex regex = new Regex(pattern);
+
+            if (!regex.IsMatch(proposedText))
+            {
+                e.Handled = true;
+                InformacjaOBledzie.Text = "Nieprawidłowy format numeru ISBN! Przykład: 978-3-16-148410-0";
+            }
+            else
+            {
+                InformacjaOBledzie.Text = "";
+            }
         }
 
         private async void PokazKsiazki_Click(object sender, RoutedEventArgs e)
@@ -193,11 +334,17 @@ namespace projekt
                 var czytelnikId = (int)CzytelnicyComboBox.SelectedValue;
                 var egzemplarzId = await _database.GetEgzemplarzKsiazki(ksiazkaId);
                 await _database.WypozyczEgzemplarzKsiazki(czytelnikId, egzemplarzId);
-
+                CollapseAll();
+                MainGrid.Visibility = Visibility.Visible;
             }
-            catch(Exception ex)
+            catch(NullReferenceException ex)
             {
-
+                MessageBox.Show("Proszę się zalogować.");
+                CollapseAll();
+                LogowanieGrid.Visibility = Visibility.Visible;
+            }
+            catch (Exception ex)
+            {
             }
         }
         private void CollapseAll()
@@ -208,6 +355,10 @@ namespace projekt
             RejestracjaGrid.Visibility = Visibility.Collapsed;
             LogowanieGrid.Visibility = Visibility.Collapsed;
             WypozyczeniaGrid.Visibility = Visibility.Collapsed;
+            DodajAutoraGrid.Visibility = Visibility.Collapsed;
+            DodajDziedzineGrid.Visibility = Visibility.Collapsed;
+            DodajWydawnictwoGrid.Visibility = Visibility.Collapsed;
+            DodajEgzemplarzGrid.Visibility = Visibility.Collapsed;
         }
         private void Zarejestruj_Click(object sender, RoutedEventArgs e)
         {
@@ -271,7 +422,9 @@ namespace projekt
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                MessageBox.Show("Proszę się zalogować.");
+                CollapseAll();
+                LogowanieGrid.Visibility = Visibility.Visible;
             }
         }
 
