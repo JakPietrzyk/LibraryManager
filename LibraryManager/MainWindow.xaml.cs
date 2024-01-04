@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Security.Policy;
@@ -308,7 +309,8 @@ namespace projekt
                 var wybranaKsiazka = (KsiazkaDto)WyszukiwaneKsiazkiGrid.SelectedItem;
                 var czyDostepna = await _database.GetAvailability(wybranaKsiazka.Id);
                 string dostepnosc = "";
-                if(czyDostepna)
+                Brush color = Brushes.Black;
+                if (czyDostepna)
                 {
                     dostepnosc = "Dostepna";
                     PrzyciskWypozycz.Visibility = Visibility.Visible;
@@ -317,8 +319,11 @@ namespace projekt
                 {
                     dostepnosc = "Brak w bibliotece";
                     PrzyciskWypozycz.Visibility = Visibility.Collapsed;
+                    color = Brushes.Red;
                 }
                 WybraneWypozyczenieTextBlock.Text = $"Tytuł: {wybranaKsiazka.Tytul}\nRok: {wybranaKsiazka.RokWydania}\nStan: {dostepnosc}";
+                WybraneWypozyczenieTextBlock.Foreground = color; 
+
             }
             else
             {
@@ -334,6 +339,7 @@ namespace projekt
                 var czytelnikId = (int)CzytelnicyComboBox.SelectedValue;
                 var egzemplarzId = await _database.GetEgzemplarzKsiazki(ksiazkaId);
                 await _database.WypozyczEgzemplarzKsiazki(czytelnikId, egzemplarzId);
+                SetDataToComboBoxes();
                 CollapseAll();
                 MainGrid.Visibility = Visibility.Visible;
             }

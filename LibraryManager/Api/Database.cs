@@ -12,6 +12,7 @@ using System.Globalization;
 using NLog.Config;
 using NLog;
 using System.Windows;
+using NLog.Layouts;
 
 public class Database
 {
@@ -271,6 +272,7 @@ public class Database
             var sql = "SELECT dostepnosc FROM Ksiazka WHERE ksiazka_id = @ksiazka_id";
             using (var cmd = new NpgsqlCommand(sql, _dbConnection))
             {
+                cmd.Parameters.AddWithValue("@ksiazka_id", ksiazka_id);
                 using (var reader = await cmd.ExecuteReaderAsync())
                 {
                     while (reader.Read())
@@ -416,7 +418,7 @@ public class Database
             using var cmd = new NpgsqlCommand("INSERT INTO Wypozyczenie (czytelnik_id, egzemplarz_id, data_wypozyczenia) VALUES (@czytelnik_id, @egzemplarz_id, @data_wypozyczenia)", _dbConnection);
             cmd.Parameters.AddWithValue("@czytelnik_id", czytelnik_id);
             cmd.Parameters.AddWithValue("@egzemplarz_id", egzemplarz_id);
-            cmd.Parameters.AddWithValue("@data_wypozyczenia", NpgsqlDbType.Date, DateTime.Now);
+            cmd.Parameters.AddWithValue("@data_wypozyczenia", NpgsqlDbType.Timestamp, DateTime.Now);
             var result = await cmd.ExecuteNonQueryAsync();
         }
         catch(PostgresException ex)
@@ -436,7 +438,7 @@ public class Database
         {
             using var cmd = new NpgsqlCommand("UPDATE wypozyczenie SET data_zwrotu = @data_zwrotu WHERE wypozyczenie_id = @wypozyczenie_id", _dbConnection);
             cmd.Parameters.AddWithValue("@wypozyczenie_id", wypozyczenie_id);
-            cmd.Parameters.AddWithValue("@data_zwrotu", NpgsqlDbType.Date, DateTime.Now);
+            cmd.Parameters.AddWithValue("@data_zwrotu", NpgsqlDbType.Timestamp, DateTime.Now);
             await cmd.ExecuteNonQueryAsync();
 
         }

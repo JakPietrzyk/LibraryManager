@@ -13,7 +13,7 @@ namespace LibraryManager.Dtos
         public string Imie { get; set; }
         public string Tytul { get; set; }
         public DateTime DataWypozyczenia { get; set; }
-        public DateTime DataZwrotu { get; set; }
+        public DateTime? DataZwrotu { get; set; }
         public DateTime RokWydania { get; set; }
     }
 
