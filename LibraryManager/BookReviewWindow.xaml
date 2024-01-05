@@ -1,0 +1,21 @@
+﻿<Window x:Class="LibraryManager.BookReviewWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:LibraryManager"
+        mc:Ignorable="d"
+        Title="BookReviewWindow" Height="200" Width="300">
+    <Grid>
+        <Label Content="Oceń książkę w skali od 1 do 5:" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+        <ComboBox x:Name="OcenaComboBox" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,30,0,0" Width="164" SelectedIndex="0">
+            <ComboBoxItem Content="1"/>
+            <ComboBoxItem Content="2"/>
+            <ComboBoxItem Content="3"/>
+            <ComboBoxItem Content="4"/>
+            <ComboBoxItem Content="5"/>
+        </ComboBox>
+        <Button Content="Ocen" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,60,0,0" Width="75" Click="WystawOcene_Click"/>
+        <Button Content="Anuluj" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="99,60,0,0" Width="75" Click="AnulujOcene_Click"/>
+    </Grid>
+</Window>

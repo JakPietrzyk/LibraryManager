@@ -447,4 +447,43 @@ public class Database
             _logger.Error(ex.Message);
         }
     }
+    public async Task DodajOcene(int wypozyczenie_id, int czytelnik_id, int opinia)
+    {
+        try
+        {
+            int ksiazka_id = -1;
+            var sql = "SELECT ksiazka_id " +
+                "FROM Ksiazka k " +
+                "WHERE k.ksiazka_id IN ( " +
+                "SELECT ksiazka_id " +
+                "FROM Egzemplarz e " +
+                "WHERE e.egzemplarz_id IN ( " +
+                "SELECT egzemplarz_id " +
+                "FROM Wypozyczenie w " +
+                "WHERE w.wypozyczenie_id = @wypozyczenie_id ) )";
+            using (var cmdSelect = new NpgsqlCommand(sql, _dbConnection))
+            {
+                cmdSelect.Parameters.AddWithValue("@wypozyczenie_id", wypozyczenie_id);
+                using (var reader = await cmdSelect.ExecuteReaderAsync())
+                {
+                    while (reader.Read())
+                    {
+                        ksiazka_id = (int)reader["ksiazka_id"];
+                    }
+                }
+            }
+            if (ksiazka_id < 0)
+                throw new NullReferenceException();
+            using var cmd = new NpgsqlCommand("INSERT INTO Opinia_Czytelnika (czytelnik_id, ksiazka_id, opinia) VALUES( @czytelnik_id, @ksiazka_id, @opinia);", _dbConnection);
+            cmd.Parameters.AddWithValue("@czytelnik_id", czytelnik_id);
+            cmd.Parameters.AddWithValue("@ksiazka_id", ksiazka_id);
+            cmd.Parameters.AddWithValue("@opinia", opinia);
+            await cmd.ExecuteNonQueryAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex.Message);
+        }
+    }
+    
 }

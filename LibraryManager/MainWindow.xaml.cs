@@ -1,4 +1,5 @@
-﻿using LibraryManager.Dtos;
+﻿using LibraryManager;
+using LibraryManager.Dtos;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -438,16 +439,34 @@ namespace projekt
         {
             await ShowRentals();
         }
+        private int RateBook()
+        {
+            BookReviewWindow reviewWindow = new BookReviewWindow();
+            bool? result = reviewWindow.ShowDialog();
 
+            if (result == true)
+            {
+                int selectedRating = reviewWindow.SelectedRating;
+                MessageBox.Show($"Dziękujemy za wystawienie oceny: {selectedRating}");
+                return selectedRating;
+            }
+            return -1;
+        }
         private async void PrzyciskZwrotEgzemplarza_Click(object sender, RoutedEventArgs e)
         {
             try
             {
                 var wypozyczenieId = ((RentalDto)WypozyczoneKsiazki.SelectedItem)?.Id;
+                var czytelnik_id = (int)CzytelnicyComboBox.SelectedValue;
                 if (wypozyczenieId != null)
                 {
                     await _database.DodajDateZwrotu((int)wypozyczenieId);
                     await ShowRentals();
+                    int rate = RateBook();
+                    if (rate > 0)
+                    {
+                        await _database.DodajOcene((int)wypozyczenieId, czytelnik_id ,rate);
+                    }
                 }
             }
             catch (Exception ex)
