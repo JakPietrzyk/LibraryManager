@@ -198,14 +198,15 @@ namespace projekt
                 var genreIds = comboBoxes.Where(cb => cb.SelectedValue != null && (int)cb.SelectedValue != 0)
                                          .Select(cb => (int)cb.SelectedValue)
                                          .ToList();
+                int genreId = -1;
                 if (genreIds.Any())
                 {
-                    await _database.AddGenreWithSubTypes(genreIds);
+                    genreId = await _database.AddGenreWithSubTypes(genreIds);
                 }
 
                 int authorId = (int)NewBookAuthor.SelectedValue;
                 int publisherId = (int)NewBookPublisher.SelectedValue;
-                int genreId = (int)NewBookGenre.SelectedValue;
+                //int genreId = (int)NewBookGenre.SelectedValue;
                 string title = NewBookTitle.Text;
                 string date = NewBookDate.Text;
                 await _database.AddBook(title, date, authorId, publisherId, genreId);

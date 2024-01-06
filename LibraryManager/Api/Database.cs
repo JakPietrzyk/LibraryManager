@@ -283,7 +283,34 @@ public class Database
         }
         return genres;
     }
-    
+    public async Task<List<DziedzinaDto>> GetGenresDistinct()
+    {
+        List<DziedzinaDto> genres = new List<DziedzinaDto>();
+        try
+        {
+            var sql = "SELECT nazwa FROM Dziedzina GROUP BY nazwa";
+            using (var cmd = new NpgsqlCommand(sql, _dbConnection))
+            {
+                using (var reader = await cmd.ExecuteReaderAsync())
+                {
+                    while (reader.Read())
+                    {
+                        var genre = new DziedzinaDto
+                        {
+                            Nazwa = reader["nazwa"].ToString(),
+                        };
+
+                        genres.Add(genre);
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex.Message);
+        }
+        return genres;
+    }
     public async Task<bool> GetAvailability(int ksiazka_id)
     {
         try
