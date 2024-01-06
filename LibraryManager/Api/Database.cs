@@ -94,22 +94,36 @@ public class Database
         }
         return results;
     }
-    async public Task<List<KsiazkaDto>> GetAllBooks(int? sortby = null, string tytul = null)
+    async public Task<List<KsiazkaDto>> GetAllBooks(int? dziedzina_id = null, string tytul = null)
     {
         List<KsiazkaDto> results = new List<KsiazkaDto>();
         try
         {
-            string sql = "SELECT * FROM ksiazka";
+            string sql = "SELECT * FROM ksiazka ORDER BY tytul;";
 
-            if (sortby != null)
-                sql = "SELECT * FROM Ksiazka WHERE dziedzina_id = @dziedzinaId";
-            if(tytul != null)
-                sql = "SELECT * FROM Ksiazka WHERE tytul LIKE @tytul";
+            if (dziedzina_id != null)
+                sql = "WITH RECURSIVE Subcategories AS " +
+                    "( " +
+                        "SELECT dziedzina_id, nazwa " +
+                        "FROM Dziedzina WHERE dziedzina_id = @dziedzina_id " +
+                        "UNION " +
+                        "SELECT d.dziedzina_id, d.nazwa " +
+                        "FROM Dziedzina d " +
+                        "JOIN Subcategories s " +
+                        "ON d.dziedzina_nadrzedna_id = s.dziedzina_id " +
+                    ") " +
+                    "SELECT DISTINCT k.* " +
+                    "FROM Ksiazka k " +
+                    "JOIN Subcategories s " +
+                    "ON k.dziedzina_id = s.dziedzina_id " +
+                    "ORDER BY k.tytul";
+            if (tytul != null)
+                sql = "SELECT * FROM Ksiazka WHERE tytul LIKE @tytul ORDER BY tytul";
 
             using (var cmd = new NpgsqlCommand(sql, _dbConnection))
             {
-                if (sortby != null)
-                    cmd.Parameters.AddWithValue("@dziedzinaId", sortby);
+                if (dziedzina_id != null)
+                    cmd.Parameters.AddWithValue("@dziedzina_id", dziedzina_id);
                 if(tytul != null)
                 {
                     tytul = "%" + tytul + "%";
@@ -241,7 +255,7 @@ public class Database
         List<DziedzinaDto> genres = new List<DziedzinaDto>();
         try
         {
-            var sql = "SELECT dziedzina_id, nazwa FROM Dziedzina";
+            var sql = "SELECT * FROM Dziedzina";
             using (var cmd = new NpgsqlCommand(sql, _dbConnection))
             {
                 using (var reader = await cmd.ExecuteReaderAsync())
@@ -251,8 +265,13 @@ public class Database
                         var genre = new DziedzinaDto
                         {
                             Id = Convert.ToInt32(reader["dziedzina_id"]),
-                            Nazwa = reader["nazwa"].ToString()
+                            Nazwa = reader["nazwa"].ToString(),
                         };
+
+                        if (reader["dziedzina_nadrzedna_id"] is DBNull)
+                            genre.DziedzinaNadrzednaId = null;
+                        else
+                            genre.DziedzinaNadrzednaId = Convert.ToInt32(reader["dziedzina_nadrzedna_id"]);
                         genres.Add(genre);
                     }
                 }
@@ -289,7 +308,30 @@ public class Database
         }
         return false;
     }
-
+    public async Task<double> GetRating(int ksiazka_id)
+    {
+        try
+        {
+            var sql = "SELECT AVG(opinia) AS srednia_ocen FROM Opinia_Czytelnika WHERE ksiazka_id = @ksiazka_id";
+            using (var cmd = new NpgsqlCommand(sql, _dbConnection))
+            {
+                cmd.Parameters.AddWithValue("@ksiazka_id", ksiazka_id);
+                using (var reader = await cmd.ExecuteReaderAsync())
+                {
+                    while (reader.Read())
+                    {
+                        var opinia = Convert.ToDouble(reader["srednia_ocen"]);
+                        return opinia;
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex.Message);
+        }
+        return -1;
+    }
     async public Task AddBook(string tytul, string rok_wydania, int author_id, int publisher_id, int genre_id)
     {
         try
@@ -371,7 +413,10 @@ public class Database
         {
             using var cmd = new NpgsqlCommand("INSERT INTO Dziedzina (nazwa, dziedzina_nadrzedna_id) VALUES (@nazwa, @dziedzina_nadrzedna_id)", _dbConnection);
             cmd.Parameters.AddWithValue("@nazwa", nazwa);
-            cmd.Parameters.AddWithValue("@dziedzina_nadrzedna_id", dziedzina_nadrzedna_id);
+            if(dziedzina_nadrzedna_id > 0)
+                cmd.Parameters.AddWithValue("@dziedzina_nadrzedna_id", dziedzina_nadrzedna_id);
+            else
+                cmd.Parameters.AddWithValue("@dziedzina_nadrzedna_id", DBNull.Value);
             await cmd.ExecuteNonQueryAsync();
         }
         catch (Exception ex)
@@ -379,6 +424,67 @@ public class Database
             _logger.Error(ex.Message);
         }
     }
+    public async Task<int> AddGenreWithSubTypes(List<int> genreIds)
+    {
+        int? lastInsertedId = null;
+
+        try
+        {
+            foreach (var genreId in genreIds)
+            {
+                lastInsertedId = await AddSingleGenre(lastInsertedId, genreId);
+            }
+
+            return lastInsertedId ?? 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex.Message);
+            return 0;
+        }
+    }
+    public async Task<string> GetGenreNameById(int genreId)
+    {
+        try
+        {
+            var genres = await GetGenres();
+            var genre = genres.FirstOrDefault(g => g.Id == genreId);
+            return genre?.Nazwa;
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex.Message);
+            return null; // or throw an exception based on your error handling logic
+        }
+    }
+
+    public async Task<int?> AddSingleGenre(int? dziedzina_nadrzedna_id, int genreId)
+    {
+        try
+        {
+            using var cmd = new NpgsqlCommand("INSERT INTO Dziedzina (nazwa, dziedzina_nadrzedna_id) VALUES (@nazwa, @dziedzina_nadrzedna_id) RETURNING dziedzina_id", _dbConnection);
+            cmd.Parameters.AddWithValue("@nazwa", await GetGenreNameById(genreId)); // Replace with the actual genre name or logic to retrieve the genre name
+
+            if (dziedzina_nadrzedna_id != null)
+            {
+                cmd.Parameters.AddWithValue("@dziedzina_nadrzedna_id", dziedzina_nadrzedna_id);
+            }
+            else
+            {
+                cmd.Parameters.AddWithValue("@dziedzina_nadrzedna_id", DBNull.Value);
+            }
+
+            var lastId = await cmd.ExecuteScalarAsync();
+            return lastId as int?;
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex.Message);
+            return null;
+        }
+    }
+
+
     public async Task AddCopyOfBook(int ksiazka_id, string isbn)
     {
         try

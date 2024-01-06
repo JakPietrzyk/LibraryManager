@@ -10,5 +10,6 @@ namespace LibraryManager.Dtos
     {
         public int Id { get; set; }
         public string Nazwa { get; set; }
+        public int? DziedzinaNadrzednaId { get; set; }
     }
 }

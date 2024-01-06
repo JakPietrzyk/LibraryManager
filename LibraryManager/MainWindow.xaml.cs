@@ -45,6 +45,7 @@ namespace projekt
             await DisplayGenres();
             await WyswietlCzytelnikow();
             await DisplayBooks();
+            await CreateComboBoxes();
         }
         async Task DisplayBooks()
         {
@@ -106,12 +107,60 @@ namespace projekt
             CzytelnicyComboBox.DisplayMemberPath = "PelneImieNazwisko";
             CzytelnicyComboBox.SelectedValuePath = "Id";
         }
-        private void listBox1_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
 
-        }
-        private void DodajKsiazke_Click(object sender, RoutedEventArgs e)
+        private List<ComboBox> comboBoxes = new List<ComboBox>();
+
+        private async Task CreateComboBoxes(int parentId = 0, StackPanel parentPanel = null)
         {
+            List<DziedzinaDto> dziedziny = await _database.GetGenres();
+
+            dziedziny.Insert(0, new DziedzinaDto { Id = 0, Nazwa = "" });
+
+            StackPanel currentPanel;
+            if (parentPanel == null)
+            {
+                currentPanel = MainStackPanel;
+                foreach (var cb in comboBoxes)
+                {
+                    currentPanel.Children.Remove(cb); 
+                }
+                comboBoxes.Clear();
+            }
+            else
+            {
+                currentPanel = parentPanel;
+            }
+
+            var comboBox = new ComboBox
+            {
+                ItemsSource = dziedziny.Where(d => !comboBoxes.Any(cb => (int)cb.SelectedValue == d.Id)),
+                DisplayMemberPath = "Nazwa",
+                SelectedValuePath = "Id",
+            };
+            comboBox.SelectionChanged += async (sender, e) =>
+            {
+                var childComboBox = sender as ComboBox;
+                var selectedDziedzinaId = (int)childComboBox.SelectedValue;
+
+                var isLastComboBox = comboBoxes.LastOrDefault() == childComboBox;
+                if (isLastComboBox && selectedDziedzinaId != 0)
+                {
+                    await CreateComboBoxes(selectedDziedzinaId, childComboBox.Parent as StackPanel);
+                }
+            };
+
+            comboBoxes.Add(comboBox);
+            currentPanel.Children.Add(comboBox);
+
+            foreach (var cb in comboBoxes)
+            {
+                cb.Visibility = Visibility.Visible;
+            }
+        }
+
+        private async void DodajKsiazke_Click(object sender, RoutedEventArgs e)
+        {
+            await CreateComboBoxes();
             MainGrid.Visibility = Visibility.Collapsed;
             DodajKsiazkeGrid.Visibility = Visibility.Visible;
         }
@@ -146,6 +195,14 @@ namespace projekt
         {
             try
             {
+                var genreIds = comboBoxes.Where(cb => cb.SelectedValue != null && (int)cb.SelectedValue != 0)
+                                         .Select(cb => (int)cb.SelectedValue)
+                                         .ToList();
+                if (genreIds.Any())
+                {
+                    await _database.AddGenreWithSubTypes(genreIds);
+                }
+
                 int authorId = (int)NewBookAuthor.SelectedValue;
                 int publisherId = (int)NewBookPublisher.SelectedValue;
                 int genreId = (int)NewBookGenre.SelectedValue;
@@ -303,28 +360,36 @@ namespace projekt
             MainGrid.Visibility = Visibility.Visible;
 
         }
+        private async Task AktualizujInformacjeOKsiazce()
+        {
+            var wybranaKsiazka = (KsiazkaDto)WyszukiwaneKsiazkiGrid.SelectedItem;
+            var czyDostepna = await _database.GetAvailability(wybranaKsiazka.Id);
+            string dostepnosc = "";
+            var ocena = await _database.GetRating(wybranaKsiazka.Id);
+            Brush color = Brushes.Black;
+            if (czyDostepna)
+            {
+                dostepnosc = "Dostepna";
+                PrzyciskWypozycz.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                dostepnosc = "Brak w bibliotece";
+                PrzyciskWypozycz.Visibility = Visibility.Collapsed;
+                color = Brushes.Red;
+            }
+            if (ocena >= 0)
+                WybraneWypozyczenieTextBlock.Text = $"Tytuł: {wybranaKsiazka.Tytul}\nRok: {wybranaKsiazka.RokWydania}\nStan: {dostepnosc}\nOcena: {ocena}/5";
+            else
+                WybraneWypozyczenieTextBlock.Text = $"Tytuł: {wybranaKsiazka.Tytul}\nRok: {wybranaKsiazka.RokWydania}\nStan: {dostepnosc}\nOcena: brak ocen";
+
+            WybraneWypozyczenieTextBlock.Foreground = color;
+        }
         private async void WyszukiwaneKsiazkiGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (e.AddedItems.Count > 0)
             {
-                var wybranaKsiazka = (KsiazkaDto)WyszukiwaneKsiazkiGrid.SelectedItem;
-                var czyDostepna = await _database.GetAvailability(wybranaKsiazka.Id);
-                string dostepnosc = "";
-                Brush color = Brushes.Black;
-                if (czyDostepna)
-                {
-                    dostepnosc = "Dostepna";
-                    PrzyciskWypozycz.Visibility = Visibility.Visible;
-                }
-                else
-                {
-                    dostepnosc = "Brak w bibliotece";
-                    PrzyciskWypozycz.Visibility = Visibility.Collapsed;
-                    color = Brushes.Red;
-                }
-                WybraneWypozyczenieTextBlock.Text = $"Tytuł: {wybranaKsiazka.Tytul}\nRok: {wybranaKsiazka.RokWydania}\nStan: {dostepnosc}";
-                WybraneWypozyczenieTextBlock.Foreground = color; 
-
+                await AktualizujInformacjeOKsiazce();
             }
             else
             {
@@ -466,6 +531,7 @@ namespace projekt
                     if (rate > 0)
                     {
                         await _database.DodajOcene((int)wypozyczenieId, czytelnik_id ,rate);
+                        await AktualizujInformacjeOKsiazce();
                     }
                 }
             }
