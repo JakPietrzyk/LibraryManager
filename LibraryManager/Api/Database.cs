@@ -94,18 +94,18 @@ public class Database
         }
         return results;
     }
-    async public Task<List<KsiazkaDto>> GetAllBooks(int? dziedzina_id = null, string tytul = null)
+    async public Task<List<KsiazkaDto>> GetAllBooks(string? nazwa = null, string tytul = null)
     {
         List<KsiazkaDto> results = new List<KsiazkaDto>();
         try
         {
             string sql = "SELECT * FROM ksiazka ORDER BY tytul;";
 
-            if (dziedzina_id != null)
+            if (nazwa != null)
                 sql = "WITH RECURSIVE Subcategories AS " +
                     "( " +
                         "SELECT dziedzina_id, nazwa " +
-                        "FROM Dziedzina WHERE dziedzina_id = @dziedzina_id " +
+                        "FROM Dziedzina WHERE nazwa = @nazwa " +
                         "UNION " +
                         "SELECT d.dziedzina_id, d.nazwa " +
                         "FROM Dziedzina d " +
@@ -122,8 +122,8 @@ public class Database
 
             using (var cmd = new NpgsqlCommand(sql, _dbConnection))
             {
-                if (dziedzina_id != null)
-                    cmd.Parameters.AddWithValue("@dziedzina_id", dziedzina_id);
+                if (nazwa != null)
+                    cmd.Parameters.AddWithValue("@nazwa", nazwa);
                 if(tytul != null)
                 {
                     tytul = "%" + tytul + "%";
@@ -434,7 +434,7 @@ public class Database
             _logger.Error(ex.Message);
         }
     }
-    public async Task AddGenre(string nazwa, int dziedzina_nadrzedna_id)
+    public async Task AddGenre(string nazwa, int? dziedzina_nadrzedna_id = null)
     {
         try
         {
@@ -451,15 +451,109 @@ public class Database
             _logger.Error(ex.Message);
         }
     }
-    public async Task<int> AddGenreWithSubTypes(List<int> genreIds)
+    public async Task<List<int>> GetHierarchyIds(string genreName, int? parentId = null)
+    {
+        try
+        {
+            var hierarchyIds = new List<int>();
+
+            //using (var conn = new NpgsqlConnection("connection_string_here"))
+            //{
+            //    await conn.OpenAsync();
+
+                string query = @"
+                WITH RECURSIVE Subcategories AS (
+                    SELECT dziedzina_id, dziedzina_nadrzedna_id
+                    FROM Dziedzina
+                    WHERE nazwa = @nazwa
+                    UNION
+                    SELECT d.dziedzina_id, d.dziedzina_nadrzedna_id
+                    FROM Dziedzina d
+                    JOIN Subcategories s ON d.dziedzina_nadrzedna_id = s.dziedzina_id
+                )
+                SELECT dziedzina_id
+                FROM Subcategories";
+                if (parentId != null)
+                    query += " WHERE dziedzina_nadrzedna_id = @dziedzina_nadrzedna_id";
+                using (var cmd = new NpgsqlCommand(query, _dbConnection))
+                {
+                    cmd.Parameters.AddWithValue("@nazwa", genreName);
+                    if (parentId != null)
+                        cmd.Parameters.AddWithValue("@dziedzina_nadrzedna_id", parentId);
+
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            if (!reader.IsDBNull(0))
+                            {
+                                hierarchyIds.Add(reader.GetInt32(0));
+                            }
+                        }
+                    }
+                }
+            
+
+            return hierarchyIds;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error getting hierarchy IDs: " + ex.Message);
+            return null;
+        }
+    }
+    public async Task<int?> GetExistingHierarchyId(List<string> genreNames)
+    {
+        List<int> singleNameParents = new List<int>();
+        foreach (var genreName in genreNames)
+        {
+            try
+            {
+                if(singleNameParents.Count > 0 )
+                {
+                    List<int> parentsToAdd = new List<int>();
+                    foreach (var parentId in singleNameParents)
+                    {
+                        parentsToAdd.AddRange(await GetHierarchyIds(genreName, parentId));
+                    }
+                    singleNameParents.Clear();
+                    singleNameParents.AddRange(parentsToAdd);
+                    if (singleNameParents.Count == 0)
+                        break;
+                }
+                else
+                {
+                    singleNameParents = await GetHierarchyIds(genreName);
+                }
+            }
+            catch(Exception ex)
+            {
+
+            }
+        }
+        if(singleNameParents.Count == 1)
+        {
+            return singleNameParents.First();
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+
+
+
+
+    public async Task<int> AddGenreWithSubTypes(List<string> genreNames)
     {
         int? lastInsertedId = null;
 
         try
         {
-            foreach (var genreId in genreIds)
+            foreach (var genreName in genreNames)
             {
-                lastInsertedId = await AddSingleGenre(lastInsertedId, genreId);
+                lastInsertedId = await AddSingleGenre(lastInsertedId, genreName);
             }
 
             return lastInsertedId ?? 0;
@@ -470,27 +564,13 @@ public class Database
             return 0;
         }
     }
-    public async Task<string> GetGenreNameById(int genreId)
-    {
-        try
-        {
-            var genres = await GetGenres();
-            var genre = genres.FirstOrDefault(g => g.Id == genreId);
-            return genre?.Nazwa;
-        }
-        catch (Exception ex)
-        {
-            _logger.Error(ex.Message);
-            return null; // or throw an exception based on your error handling logic
-        }
-    }
 
-    public async Task<int?> AddSingleGenre(int? dziedzina_nadrzedna_id, int genreId)
+    public async Task<int?> AddSingleGenre(int? dziedzina_nadrzedna_id, string genreName)
     {
         try
         {
             using var cmd = new NpgsqlCommand("INSERT INTO Dziedzina (nazwa, dziedzina_nadrzedna_id) VALUES (@nazwa, @dziedzina_nadrzedna_id) RETURNING dziedzina_id", _dbConnection);
-            cmd.Parameters.AddWithValue("@nazwa", await GetGenreNameById(genreId)); // Replace with the actual genre name or logic to retrieve the genre name
+            cmd.Parameters.AddWithValue("@nazwa", genreName); // Replace with the actual genre name or logic to retrieve the genre name
 
             if (dziedzina_nadrzedna_id != null)
             {
@@ -524,6 +604,7 @@ public class Database
         catch (Exception ex)
         {
             _logger.Error(ex.Message);
+            throw ex;
         }
     }
     public async Task DodajCzytelnika(string imie, string nazwisko, string adres, string email, string telefon)

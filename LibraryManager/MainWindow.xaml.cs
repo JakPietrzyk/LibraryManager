@@ -71,28 +71,24 @@ namespace projekt
         }
         async Task DisplayGenres()
         {
-            var genres = await _database.GetGenres();
+            var genres = await _database.GetGenresDistinct();
             var genresSortowanie = new List<DziedzinaDto>();
             genresSortowanie.AddRange(genres);
-            NewBookGenre.ItemsSource = genres;
-            NewBookGenre.DisplayMemberPath = "Nazwa";
-            NewBookGenre.SelectedValuePath = "Id";
+            //NewBookGenre.ItemsSource = genres;
+            //NewBookGenre.DisplayMemberPath = "Nazwa";
             genresSortowanie.Insert(0, new DziedzinaDto()
             {
-                Id = 0,
-                Nazwa = "<Brak>"
+                Nazwa = ""
             });
             SortowaniePoDziedzinie.ItemsSource = genresSortowanie;
             SortowaniePoDziedzinie.SelectedIndex = 0;
 
             SortowaniePoDziedzinie.DisplayMemberPath = "Nazwa";
-            SortowaniePoDziedzinie.SelectedValuePath = "Id";
 
             NowaDziedzinaNadrzednaId.ItemsSource = genresSortowanie;
             NowaDziedzinaNadrzednaId.SelectedIndex = 0;
 
             NowaDziedzinaNadrzednaId.DisplayMemberPath = "Nazwa";
-            NowaDziedzinaNadrzednaId.SelectedValuePath = "Id";
         }
         async Task WyswietlCzytelnikow()
         {
@@ -108,11 +104,12 @@ namespace projekt
             CzytelnicyComboBox.SelectedValuePath = "Id";
         }
 
-        private List<ComboBox> comboBoxes = new List<ComboBox>();
 
-        private async Task CreateComboBoxes(int parentId = 0, StackPanel parentPanel = null)
+
+        private List<ComboBox> comboBoxes = new List<ComboBox>();
+        private async Task CreateComboBoxes(string nazwa = "", StackPanel parentPanel = null)
         {
-            List<DziedzinaDto> dziedziny = await _database.GetGenres();
+            List<DziedzinaDto> dziedziny = await _database.GetGenresDistinct();
 
             dziedziny.Insert(0, new DziedzinaDto { Id = 0, Nazwa = "" });
 
@@ -122,7 +119,7 @@ namespace projekt
                 currentPanel = MainStackPanel;
                 foreach (var cb in comboBoxes)
                 {
-                    currentPanel.Children.Remove(cb); 
+                    currentPanel.Children.Remove(cb);
                 }
                 comboBoxes.Clear();
             }
@@ -133,22 +130,22 @@ namespace projekt
 
             var comboBox = new ComboBox
             {
-                ItemsSource = dziedziny.Where(d => !comboBoxes.Any(cb => (int)cb.SelectedValue == d.Id)),
-                DisplayMemberPath = "Nazwa",
-                SelectedValuePath = "Id",
+                ItemsSource = dziedziny,
+                DisplayMemberPath = "Nazwa"
             };
+
+
             comboBox.SelectionChanged += async (sender, e) =>
             {
                 var childComboBox = sender as ComboBox;
-                var selectedDziedzinaId = (int)childComboBox.SelectedValue;
+                var selectedDziedzinaNazwa = ((DziedzinaDto)childComboBox.SelectedValue).Nazwa;
 
                 var isLastComboBox = comboBoxes.LastOrDefault() == childComboBox;
-                if (isLastComboBox && selectedDziedzinaId != 0)
+                if (isLastComboBox && !string.IsNullOrEmpty(selectedDziedzinaNazwa))
                 {
-                    await CreateComboBoxes(selectedDziedzinaId, childComboBox.Parent as StackPanel);
+                    await CreateComboBoxes(selectedDziedzinaNazwa, childComboBox.Parent as StackPanel);
                 }
             };
-
             comboBoxes.Add(comboBox);
             currentPanel.Children.Add(comboBox);
 
@@ -195,13 +192,19 @@ namespace projekt
         {
             try
             {
-                var genreIds = comboBoxes.Where(cb => cb.SelectedValue != null && (int)cb.SelectedValue != 0)
-                                         .Select(cb => (int)cb.SelectedValue)
-                                         .ToList();
-                int genreId = -1;
-                if (genreIds.Any())
+                var genreNames = comboBoxes
+                    .Where(cb => cb.SelectedValue != null && cb.SelectedValue is DziedzinaDto) 
+                    .Select(cb => ((DziedzinaDto)cb.SelectedValue).Nazwa) 
+                    .ToList();
+                if(genreNames.Count != genreNames.Distinct().Count())
                 {
-                    genreId = await _database.AddGenreWithSubTypes(genreIds);
+                    MessageBox.Show("Wprowadź unikalne wartości dla wszystkich dziedzin.");
+                    return;
+                }
+                int? genreId = await _database.GetExistingHierarchyId(genreNames);
+                if (genreNames.Any() && genreId == null)
+                {
+                    genreId = await _database.AddGenreWithSubTypes(genreNames);
                 }
 
                 int authorId = (int)NewBookAuthor.SelectedValue;
@@ -209,7 +212,7 @@ namespace projekt
                 //int genreId = (int)NewBookGenre.SelectedValue;
                 string title = NewBookTitle.Text;
                 string date = NewBookDate.Text;
-                await _database.AddBook(title, date, authorId, publisherId, genreId);
+                await _database.AddBook(title, date, authorId, publisherId, (int)genreId);
                 SetDataToComboBoxes();
                 MainGrid.Visibility = Visibility.Visible;
                 DodajKsiazkeGrid.Visibility = Visibility.Collapsed;
@@ -261,7 +264,7 @@ namespace projekt
             try
             {
                 string name = NowaDziedzinaNazwa.Text;
-                int genreId = (int)NowaDziedzinaNadrzednaId.SelectedValue;
+                int genreId = ((DziedzinaDto)NowaDziedzinaNadrzednaId.SelectedValue).Id;
                 await _database.AddGenre(name, genreId);
                 SetDataToComboBoxes();
                 CollapseAll();
@@ -344,8 +347,19 @@ namespace projekt
         {
             var tytulDoWyszukania = WyszukiwanyTytul.Text;
             List<KsiazkaDto> books;
-            if (SortowaniePoDziedzinie.SelectedIndex > 0)
-                books = await _database.GetAllBooks((int)SortowaniePoDziedzinie.SelectedValue);
+            string bookGenre;
+            try
+            {
+                bookGenre = ((DziedzinaDto)SortowaniePoDziedzinie.SelectedValue).Nazwa;
+            }
+            catch(Exception ex)
+            {
+                bookGenre = null;
+            }
+            if (!string.IsNullOrEmpty(bookGenre))
+            {
+                books = await _database.GetAllBooks(bookGenre);
+            }
             else if (!string.IsNullOrEmpty(tytulDoWyszukania))
                 books = await _database.GetAllBooks(null, tytulDoWyszukania);
             else
