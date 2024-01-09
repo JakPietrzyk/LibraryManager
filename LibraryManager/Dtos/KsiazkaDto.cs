@@ -10,6 +10,8 @@ namespace LibraryManager.Dtos
     {
         public int Id { get; set; }
         public string Tytul { get; set; }
-        public string RokWydania { get; set; }
+        public DateTime RokWydania { get; set; }
+        public AutorDto Autor { get; set; }
+        public decimal Opinia { get; set; }
     }
 }

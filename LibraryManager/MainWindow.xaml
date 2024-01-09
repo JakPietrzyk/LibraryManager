@@ -8,7 +8,7 @@
         Title="MainWindow" Height="450" Width="800">
     <Grid>
         <Grid x:Name="MainGrid">
-            <StackPanel Margin="20">
+            <StackPanel Margin="20,20,20,199">
                 <Grid Height="122" >
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -34,8 +34,8 @@
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
-                        <Button Content="Pokaż wszystkie wypozyczenia" Grid.Row="0" Click="PokazWypozyczenia_Click"  Width="150" Height="25" />
-                        <Button Content="Wyszukiwarka książek" Grid.Row="1" Click="PokazWyszukiwarke_Click"  Width="150" Height="25"/>
+                        <Button Content="Pokaż wszystkie wypozyczenia" Grid.Row="0" Click="PokazWypozyczenia_Click" Height="25" Margin="44,18,43,18" />
+                        <Button Content="Wyszukiwarka książek" Grid.Row="1" Click="PokazWyszukiwarke_Click" Height="25" Margin="44,18,43,18"/>
                     </Grid>
                     <Grid x:Name="Logowanie" Grid.Column="2">
                         <Grid.RowDefinitions>
@@ -46,6 +46,9 @@
                         <Button Content="Zarejestruj się" Grid.Row="1" Click="Zarejestruj_Click"  Width="150" Height="25"/>
                     </Grid>
                 </Grid>
+            </StackPanel>
+            <StackPanel x:Name="RankingiStackPanel" Margin="20,227,20,10">
+
             </StackPanel>
         </Grid>
         <Grid x:Name="DodajKsiazkeGrid" Visibility="Collapsed">
@@ -114,7 +117,7 @@
         </Grid>
         <Grid x:Name="LogowanieGrid" Visibility="Collapsed">
             <StackPanel>
-                <ComboBox x:Name="CzytelnicyComboBox" Margin="0,0,0,5" Width="200" DisplayMemberPath="." Text="Czytelnicy"/>                
+                <ComboBox x:Name="CzytelnicyComboBox" Margin="0,0,0,5" Width="200" DisplayMemberPath="." Text="Czytelnicy"/>
                 <Button x:Name="PrzyciskZaloguj" Content="Zaloguj" Width="100" Click="PrzyciskZaloguj_Click" Margin="0,10,0,0"/>
                 <Button x:Name="AnulujLogowanie" Content="Anuluj" Width="100" Click="AnulujWyszukiwanie_Click" />
             </StackPanel>
@@ -132,10 +135,17 @@
                         <ColumnDefinition Width="1*" />
                     </Grid.ColumnDefinitions>
                     <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
-                        <DataGrid x:Name="WyszukiwaneKsiazkiGrid" Margin="20" AutoGenerateColumns="True" 
-                                  Visibility="Collapsed" CanUserSortColumns="False" Width="Auto"  
-                                  HorizontalAlignment="Center" VerticalAlignment="Stretch"
-                                  IsReadOnly="True" SelectionChanged="WyszukiwaneKsiazkiGrid_SelectionChanged" />
+                        <DataGrid x:Name="WyszukiwaneKsiazkiGrid" Margin="20" AutoGenerateColumns="False"
+                                          Visibility="Collapsed" CanUserSortColumns="False" Width="Auto"  
+                                          HorizontalAlignment="Center" VerticalAlignment="Stretch"
+                                          IsReadOnly="True" SelectionChanged="WyszukiwaneKsiazkiGrid_SelectionChanged">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Tytuł" Binding="{Binding Tytul}" />
+                                <DataGridTextColumn Header="Autor" Binding="{Binding Autor.Name}" />
+                                <DataGridTextColumn Header="Rok Wydania" Binding="{Binding RokWydania, StringFormat=\{0:dd/MM/yyyy\}}" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+
                     </ScrollViewer>
                     <TextBlock x:Name="WybraneWypozyczenieTextBlock" Grid.Column="1" TextWrapping="Wrap" Margin="20" VerticalAlignment="Top"/>
                     <Button x:Name="PrzyciskWypozycz" Grid.Column="1" Content="Wypożycz" Height="50" Width="100" Visibility="Collapsed" Click="PrzyciskWypozycz_Click" Margin="20"/>

@@ -28,17 +28,56 @@ namespace projekt
         public MainWindow()
         {
             InitializeComponent();
-            SetDataToComboBoxes();
+            InitializeComponentsAndGetDataFromDatabase();
             SizeChanged += MainWindow_SizeChanged;
         }
         private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e)
         {
             WyszukiwaneKsiazkiGrid.Height = ActualHeight - 200;
         }
+        public async void InitializeComponentsAndGetDataFromDatabase()
+        {
+            await SetDataToComboBoxes();
+            await CreateRankings();
 
+        }
+        public async Task CreateRankings()
+        {
+            RankingiStackPanel.Children.Clear();
+            await CreateTopBookTextBlock();
+            await CreateTopReaderOfMonthTextBlock();
+        }
+        public async Task CreateTopBookTextBlock()
+        {
+            TextBlock topBooksTextBlock = new TextBlock();
+            topBooksTextBlock.Text = "Top 3 książki:";
+            RankingiStackPanel.Children.Add(topBooksTextBlock);
 
+            var books = await _database.GetTopBooks();
 
-        public async void SetDataToComboBoxes()
+            int index = 1;
+            foreach (var book in books.Take(3))
+            {
+                TextBlock bookInfoTextBlock = new TextBlock();
+                bookInfoTextBlock.Text = $"\t{index}: Ocena: {book.Opinia.ToString("0.0")}. Książka pt.: {book.Tytul}, {book.Autor.Name}, {book.RokWydania.ToShortDateString()}";
+                RankingiStackPanel.Children.Add(bookInfoTextBlock);
+                index++;
+            }
+        }
+        public async Task CreateTopReaderOfMonthTextBlock()
+        {
+            TextBlock topReaderTextBlock = new TextBlock();
+            topReaderTextBlock.Text = "Najbardziej aktywny czytelnik miesiąca:";
+            RankingiStackPanel.Children.Add(topReaderTextBlock);
+            var reader = await _database.GetTopReader();
+            if (reader != null)
+            {
+                TextBlock topReaderInfoTextBlock = new TextBlock();
+                topReaderInfoTextBlock.Text = $"\t{reader.Nazwisko} {reader.Imie}\nIlość przeczytanych książek: {reader.IloscWypozyczen}";
+                RankingiStackPanel.Children.Add(topReaderInfoTextBlock);
+            }
+        }
+        public async Task SetDataToComboBoxes()
         {
             await DisplayAuthors();
             await DisplayPublishers();
@@ -213,7 +252,7 @@ namespace projekt
                 string title = NewBookTitle.Text;
                 string date = NewBookDate.Text;
                 await _database.AddBook(title, date, authorId, publisherId, (int)genreId);
-                SetDataToComboBoxes();
+                InitializeComponentsAndGetDataFromDatabase();
                 MainGrid.Visibility = Visibility.Visible;
                 DodajKsiazkeGrid.Visibility = Visibility.Collapsed;
             }
@@ -230,7 +269,7 @@ namespace projekt
                 string authorName = NewAutorName.Text;
                 string authorSurname= NewAutorSurname.Text;
                 await _database.AddAuthor(authorName, authorSurname);
-                SetDataToComboBoxes();
+                InitializeComponentsAndGetDataFromDatabase();
                 CollapseAll();
                 MainGrid.Visibility = Visibility.Visible;
             }
@@ -250,7 +289,7 @@ namespace projekt
                 string city = NoweWydawnictwoMiasto.Text;
                 string adress = $"{street} {apartmentNumber} {postcode} {city}";
                 await _database.AddPublisher(name, adress);
-                SetDataToComboBoxes();
+                InitializeComponentsAndGetDataFromDatabase();
                 CollapseAll();
                 MainGrid.Visibility = Visibility.Visible;
             }
@@ -266,7 +305,7 @@ namespace projekt
                 string name = NowaDziedzinaNazwa.Text;
                 int genreId = ((DziedzinaDto)NowaDziedzinaNadrzednaId.SelectedValue).Id;
                 await _database.AddGenre(name, genreId);
-                SetDataToComboBoxes();
+                InitializeComponentsAndGetDataFromDatabase();
                 CollapseAll();
                 MainGrid.Visibility = Visibility.Visible;
             }
@@ -300,7 +339,7 @@ namespace projekt
                 if (!ValidateISBN(isbn))
                     throw new InvalidDataException();
                 await _database.AddCopyOfBook(bookId, isbn);
-                SetDataToComboBoxes();
+                InitializeComponentsAndGetDataFromDatabase();
                 CollapseAll();
                 MainGrid.Visibility = Visibility.Visible;
             }
@@ -394,9 +433,9 @@ namespace projekt
                 color = Brushes.Red;
             }
             if (ocena >= 0)
-                WybraneWypozyczenieTextBlock.Text = $"Tytuł: {wybranaKsiazka.Tytul}\nRok: {wybranaKsiazka.RokWydania}\nStan: {dostepnosc}\nOcena: {ocena}/5";
+                WybraneWypozyczenieTextBlock.Text = $"Tytuł: {wybranaKsiazka.Tytul}\nRok: {wybranaKsiazka.RokWydania.ToShortDateString()}\nStan: {dostepnosc}\nOcena: {ocena}/5";
             else
-                WybraneWypozyczenieTextBlock.Text = $"Tytuł: {wybranaKsiazka.Tytul}\nRok: {wybranaKsiazka.RokWydania}\nStan: {dostepnosc}\nOcena: brak ocen";
+                WybraneWypozyczenieTextBlock.Text = $"Tytuł: {wybranaKsiazka.Tytul}\nRok: {wybranaKsiazka.RokWydania.ToShortDateString()}\nStan: {dostepnosc}\nOcena: brak ocen";
 
             WybraneWypozyczenieTextBlock.Foreground = color;
         }
@@ -420,7 +459,7 @@ namespace projekt
                 var czytelnikId = (int)CzytelnicyComboBox.SelectedValue;
                 var egzemplarzId = await _database.GetEgzemplarzKsiazki(ksiazkaId);
                 await _database.WypozyczEgzemplarzKsiazki(czytelnikId, egzemplarzId);
-                SetDataToComboBoxes();
+                InitializeComponentsAndGetDataFromDatabase();
                 CollapseAll();
                 MainGrid.Visibility = Visibility.Visible;
             }

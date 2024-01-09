@@ -99,7 +99,7 @@ public class Database
         List<KsiazkaDto> results = new List<KsiazkaDto>();
         try
         {
-            string sql = "SELECT * FROM ksiazka ORDER BY tytul;";
+            string sql = "SELECT * FROM InformacjeOKsiazce ORDER BY tytul;";
 
             if (nazwa != null)
                 sql = "WITH RECURSIVE Subcategories AS " +
@@ -118,7 +118,7 @@ public class Database
                     "ON k.dziedzina_id = s.dziedzina_id " +
                     "ORDER BY k.tytul";
             if (tytul != null)
-                sql = "SELECT * FROM Ksiazka WHERE tytul LIKE @tytul ORDER BY tytul";
+                sql = "SELECT * FROM InformacjeOKsiazce WHERE tytul LIKE @tytul ORDER BY tytul";
 
             using (var cmd = new NpgsqlCommand(sql, _dbConnection))
             {
@@ -137,7 +137,11 @@ public class Database
                         {
                             Id = (int)reader["ksiazka_id"],
                             Tytul = reader["tytul"].ToString(),
-                            RokWydania = reader["rok_wydania"].ToString()
+                            RokWydania =DateTime.Parse(reader["rok_wydania"].ToString()).Date,
+                            Autor = new AutorDto
+                            {
+                                Name = reader["imie"] + " " + reader["nazwisko"]
+                            }
                         });
                     }
                 }
@@ -149,7 +153,70 @@ public class Database
         }
         return results;
     }
+    async public Task<List<KsiazkaDto>> GetTopBooks()
+    {
+        List<KsiazkaDto> results = new List<KsiazkaDto>();
+        try
+        {
+            string sql = "SELECT * FROM InformacjeOKsiazce ORDER BY srednia_ocen DESC LIMIT 3";
 
+
+            using (var cmd = new NpgsqlCommand(sql, _dbConnection))
+            {
+                using (var reader = await cmd.ExecuteReaderAsync())
+                {
+                    while (reader.Read())
+                    {
+                        results.Add(new KsiazkaDto
+                        {
+                            Tytul = reader["tytul"].ToString(),
+                            RokWydania = DateTime.Parse(reader["rok_wydania"].ToString()).Date,
+                            Autor = new AutorDto
+                            {
+                                Name = reader["imie"].ToString() + " " + reader["nazwisko"].ToString()
+                            },
+                            Opinia = (decimal)reader["srednia_ocen"]
+                        }); 
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex.Message);
+        }
+        return results;
+    }
+    async public Task<CzytelnikDto?> GetTopReader()
+    {
+        CzytelnikDto? result = null;
+        try
+        {
+            string sql = "SELECT * FROM CzytelnikMiesiaca";
+
+
+            using (var cmd = new NpgsqlCommand(sql, _dbConnection))
+            {
+                using (var reader = await cmd.ExecuteReaderAsync())
+                {
+                    while (reader.Read())
+                    {
+                        result = new CzytelnikDto()
+                        {
+                            Imie = reader["imie"].ToString(),
+                            Nazwisko = reader["nazwisko"].ToString(),
+                            IloscWypozyczen = (long)reader["ilosc_wypozyczen"]
+                        };
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex.Message);
+        }
+        return result;
+    }
     async public Task<List<RentalDto>> GetAllRentals(int czytelnik_id)
     {
         List<RentalDto> results = new List<RentalDto>();
