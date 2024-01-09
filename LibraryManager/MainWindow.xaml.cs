@@ -33,7 +33,14 @@ namespace projekt
         }
         private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            WyszukiwaneKsiazkiGrid.Height = ActualHeight - 200;
+            try
+            {
+                WyszukiwaneKsiazkiGrid.Height = ActualHeight - 200;
+            }
+            catch(Exception ex)
+            {
+                WyszukiwaneKsiazkiGrid.Height = 1;
+            }
         }
         public async void InitializeComponentsAndGetDataFromDatabase()
         {
