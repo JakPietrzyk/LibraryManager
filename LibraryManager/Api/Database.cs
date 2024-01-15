@@ -35,12 +35,26 @@ public class Database
             _logger.Error(ex.Message);
         }
     }
+    public bool IsConnection()
+    {
+        if(_dbConnection is not null)
+            if (_dbConnection.State == System.Data.ConnectionState.Open)
+                return true;
+        return false;
+    }
     public async Task<int> GetEgzemplarzKsiazki(int ksiazkaId)
     {
         int result = -1;
         try
         {
-            string sql = "SELECT * FROM egzemplarz WHERE ksiazka_id = @ksiazka_id LIMIT 1";
+            string sql = @"
+            SELECT e.egzemplarz_id 
+            FROM Egzemplarz e
+            LEFT JOIN Wypozyczenie w ON e.egzemplarz_id = w.egzemplarz_id
+            WHERE e.ksiazka_id = @ksiazka_id 
+            AND w.wypozyczenie_id IS NULL
+            OR data_zwrotu IS NOT NULL
+            LIMIT 1";
 
 
             using (var cmd = new NpgsqlCommand(sql, _dbConnection))
@@ -82,7 +96,8 @@ public class Database
                             Nazwisko = reader["nazwisko"].ToString(),
                             Adres = reader["adres"].ToString(),
                             Email = reader["email"].ToString(),
-                            Telefon = reader["telefon"].ToString()
+                            Telefon = reader["telefon"].ToString(),
+                            PelneImieNazwisko = reader["imie"].ToString() + " " + reader["nazwisko"].ToString()
                         });
                     }
                 }
@@ -103,22 +118,22 @@ public class Database
 
             if (nazwa != null)
                 sql = "WITH RECURSIVE Subcategories AS " +
-                    "( " +
-                        "SELECT dziedzina_id, nazwa " +
-                        "FROM Dziedzina WHERE nazwa = @nazwa " +
-                        "UNION " +
-                        "SELECT d.dziedzina_id, d.nazwa " +
-                        "FROM Dziedzina d " +
-                        "JOIN Subcategories s " +
-                        "ON d.dziedzina_nadrzedna_id = s.dziedzina_id " +
-                    ") " +
-                    "SELECT DISTINCT k.* " +
-                    "FROM Ksiazka k " +
+                    "( SELECT dziedzina_id, nazwa " +
+                    "FROM Dziedzina " +
+                    "WHERE nazwa = @nazwa " +
+                    "UNION " +
+                    "SELECT d.dziedzina_id, d.nazwa " +
+                    "FROM Dziedzina d " +
                     "JOIN Subcategories s " +
-                    "ON k.dziedzina_id = s.dziedzina_id " +
-                    "ORDER BY k.tytul";
+                    "ON d.dziedzina_nadrzedna_id = s.dziedzina_id ) " +
+                    "SELECT DISTINCT k.ksiazka_id, k.tytul, iok.autorzy, k.rok_wydania " +
+                    "FROM Ksiazka k " +
+                    "JOIN Subcategories s ON k.dziedzina_id = s.dziedzina_id " +
+                    "JOIN InformacjeOKsiazce iok ON k.ksiazka_id = iok.ksiazka_id " +
+                    "GROUP BY k.ksiazka_id, k.tytul, iok.autorzy, k.rok_wydania " +
+                    "ORDER BY k.tytul;";
             if (tytul != null)
-                sql = "SELECT * FROM InformacjeOKsiazce WHERE tytul LIKE @tytul ORDER BY tytul";
+                sql = "SELECT * FROM InformacjeOKsiazce WHERE LOWER(tytul) LIKE LOWER(@tytul) ORDER BY tytul";
 
             using (var cmd = new NpgsqlCommand(sql, _dbConnection))
             {
@@ -140,7 +155,7 @@ public class Database
                             RokWydania =DateTime.Parse(reader["rok_wydania"].ToString()).Date,
                             Autor = new AutorDto
                             {
-                                Name = reader["imie"] + " " + reader["nazwisko"]
+                                FullName = reader["autorzy"].ToString()
                             }
                         });
                     }
@@ -173,7 +188,7 @@ public class Database
                             RokWydania = DateTime.Parse(reader["rok_wydania"].ToString()).Date,
                             Autor = new AutorDto
                             {
-                                Name = reader["imie"].ToString() + " " + reader["nazwisko"].ToString()
+                                FullName = reader["autorzy"].ToString()
                             },
                             Opinia = (decimal)reader["srednia_ocen"]
                         }); 
@@ -228,7 +243,8 @@ public class Database
                 "JOIN egzemplarz e USING (egzemplarz_id) " +
                 "JOIN ksiazka k USING (ksiazka_id) " +
                 "JOIN czytelnik c USING (czytelnik_id) " +
-                "WHERE czytelnik_id = @czytelnik_id";
+                "WHERE czytelnik_id = @czytelnik_id " +
+                "ORDER BY data_wypozyczenia DESC";
 
             using (var cmd = new NpgsqlCommand(sql, _dbConnection))
             {
@@ -277,7 +293,7 @@ public class Database
                         authors.Add(new AutorDto
                         {
                             Id = Convert.ToInt32(reader["autor_id"]),
-                            Name = reader["author_name"].ToString()
+                            FullName = reader["author_name"].ToString()
                         });
                     }
                 }
@@ -414,8 +430,11 @@ public class Database
                 {
                     while (reader.Read())
                     {
-                        var opinia = Convert.ToDouble(reader["srednia_ocen"]);
-                        return opinia;
+                        if(reader["srednia_ocen"] is not DBNull)
+                        {
+                            var opinia = Convert.ToDouble(reader["srednia_ocen"]);
+                            return opinia;
+                        }
                     }
                 }
             }
@@ -426,7 +445,7 @@ public class Database
         }
         return -1;
     }
-    async public Task AddBook(string tytul, string rok_wydania, int author_id, int publisher_id, int genre_id)
+    async public Task AddBook(string tytul, string rok_wydania, List<int> authorIds, int publisher_id, int genre_id)
     {
         try
         {
@@ -451,10 +470,13 @@ public class Database
 
             if (ksiazkaId != 0) 
                 {
-                    using var cmd2 = new NpgsqlCommand("INSERT INTO ksiazka_autor VALUES(@ksiazka_id, @autor_id)", _dbConnection);
-                    cmd2.Parameters.AddWithValue("@ksiazka_id", ksiazkaId);     
-                    cmd2.Parameters.AddWithValue("@autor_id", author_id);
-                    await cmd2.ExecuteNonQueryAsync();
+                    foreach (int author_id in authorIds)
+                    {
+                        using var cmd2 = new NpgsqlCommand("INSERT INTO ksiazka_autor VALUES(@ksiazka_id, @autor_id)", _dbConnection);
+                        cmd2.Parameters.AddWithValue("@ksiazka_id", ksiazkaId);
+                        cmd2.Parameters.AddWithValue("@autor_id", author_id);
+                        await cmd2.ExecuteNonQueryAsync();
+                    }
 
                     _logger.Debug("Inserted data successfully!");
                 }

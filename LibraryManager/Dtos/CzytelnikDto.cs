@@ -15,6 +15,7 @@ namespace LibraryManager.Dtos
         public string Email { get; set; }
         public string Telefon { get; set; }
         public long IloscWypozyczen { get; set; }
+        public string PelneImieNazwisko { get; set; }
 
     }
 }

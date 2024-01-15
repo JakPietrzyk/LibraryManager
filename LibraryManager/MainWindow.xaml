@@ -5,10 +5,14 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:projekt"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="MainWindow" Height="600" Width="800">
     <Grid>
         <Grid x:Name="MainGrid">
             <StackPanel Margin="20,20,20,199">
+                <TextBlock x:Name="DatabaseConnectionStatusTB" HorizontalAlignment="Left" VerticalAlignment="Top" 
+                   Text="Połączenie z bazą danych: BRAK POŁĄCZENIA!" />
+                <TextBlock x:Name="LoginStatusTB"  HorizontalAlignment="Left" VerticalAlignment="Top"
+                   Text="Prosze wybrać czytelnika do uzyskania pełnej funkcjonalności!!!" />
                 <Grid Height="122" >
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -42,32 +46,40 @@
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
-                        <Button Content="Zaloguj się" Grid.Row="0" Click="PokazLogowanie_Click"  Width="150" Height="25"/>
-                        <Button Content="Zarejestruj się" Grid.Row="1" Click="Zarejestruj_Click"  Width="150" Height="25"/>
+                        <Button Content="Wybierz czytelnika" Grid.Row="0" Click="PokazLogowanie_Click"  Width="150" Height="25"/>
+                        <Button Content="Utwórz nowego czytelnika" Grid.Row="1" Click="Zarejestruj_Click"  Width="150" Height="25"/>
                     </Grid>
                 </Grid>
             </StackPanel>
-            <StackPanel x:Name="RankingiStackPanel" Margin="20,227,20,10">
+            <StackPanel x:Name="RankingiStackPanel" Margin="20,257,20,10">
 
             </StackPanel>
         </Grid>
         <Grid x:Name="DodajKsiazkeGrid" Visibility="Collapsed">
-            <StackPanel Margin="20">
-                <Label Content="Dodaj nową Książkę" FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
-                <TextBox x:Name="NewBookTitle" Margin="0,0,0,5" Width="200" Text="Tytuł książki"/>
-                <TextBox x:Name="NewBookDate" Margin="0,0,0,5" Width="200" Text="1000-01-01"/>
-                <ComboBox x:Name="NewBookAuthor" Margin="0,0,0,5" Width="200" DisplayMemberPath="Name" SelectedValuePath="Id" Text="Autor książki"/>
-                <ComboBox x:Name="NewBookPublisher" Margin="0,0,0,5" Width="200" DisplayMemberPath="." Text="Wydawnictwo"/>
-                <!--<ComboBox x:Name="NewBookGenre" Margin="0,0,0,5" Width="200" DisplayMemberPath="." Text="Dziedzina"/>-->
-                <StackPanel x:Name="MainStackPanel"/>
-                <Button Content="Dodaj" Click="Dodaj_Click" Width="100" Margin="0,10,0,0"/>
-                <Button Content="Anuluj" Click="Anuluj_Click" Width="100"/>
-            </StackPanel>
+            <ScrollViewer>
+                <StackPanel Margin="20">
+                    <Label Content="Dodaj nową Książkę" FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
+                    <Label Content="Tytuł książki: " HorizontalAlignment="Center"/>
+                    <TextBox x:Name="NewBookTitle" Margin="0,0,0,5" Width="200" Text="Tytuł książki"/>
+                    <Label Content="Data wydania książki: " HorizontalAlignment="Center"/>
+                    <TextBox x:Name="NewBookDate" Margin="0,0,0,5" Width="200" Text="2024-01-01"/>
+                    <Label Content="Autorzy książki: " HorizontalAlignment="Center"/>
+                    <StackPanel x:Name="AuthorsStackPanel"/>
+                    <Label Content="Wydawnictwo książki: " HorizontalAlignment="Center"/>
+                    <ComboBox x:Name="NewBookPublisher" Margin="0,0,0,5" Width="200" DisplayMemberPath="." Text="Wydawnictwo"/>
+                    <Label Content="Dziedziny książki:" HorizontalAlignment="Center"/>
+                    <StackPanel x:Name="MainStackPanel"/>
+                    <Button Content="Dodaj" Click="Dodaj_Click" Width="100" Margin="0,10,0,0"/>
+                    <Button Content="Anuluj" Click="Anuluj_Click" Width="100"/>
+                </StackPanel>
+            </ScrollViewer>
         </Grid>
         <Grid x:Name="DodajAutoraGrid" Visibility="Collapsed">
             <StackPanel Margin="20">
                 <Label Content="Dodaj nowego Autora" FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
+                <Label Content="Imie Autora: " HorizontalAlignment="Center"/>
                 <TextBox x:Name="NewAutorName" Margin="0,0,0,5" Width="200" Text="Imie"/>
+                <Label Content="Nazwisko Autora: " HorizontalAlignment="Center"/>
                 <TextBox x:Name="NewAutorSurname" Margin="0,0,0,5" Width="200" Text="Nazwisko"/>
                 <Button Content="Dodaj" Click="DodajAutora_Click" Width="100" Margin="0,10,0,0"/>
                 <Button Content="Anuluj" Click="Anuluj_Click" Width="100"/>
@@ -76,10 +88,16 @@
         <Grid x:Name="DodajWydawnictwoGrid" Visibility="Collapsed">
             <StackPanel Margin="20">
                 <Label Content="Dodaj nowe Wydawnictwo" FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
+                <Label Content="Nazwa Wydawnictwa: " HorizontalAlignment="Center"/>
                 <TextBox x:Name="NoweWydawnictwoNazwa" Margin="0,0,0,5" Width="200" Text="Nazwa Wydawnictwa"/>
+                <Label Content="Adres Wydawnictwa: " HorizontalAlignment="Center"/>
+                <Label Content="Ulica " HorizontalAlignment="Center"/>
                 <TextBox x:Name="NoweWydawnictwoUlica" Margin="0,0,0,5" Width="200" Text="ul. Michałowskiego"/>
+                <Label Content="Numer Budynku: " HorizontalAlignment="Center"/>
                 <TextBox x:Name="NoweWydawnictwoNumerBudynku" Margin="0,0,0,5" Width="200" Text="9/2"/>
+                <Label Content="Kod Pocztowy: " HorizontalAlignment="Center"/>
                 <TextBox x:Name="NoweWydawnictwoKodPocztowy" Margin="0,0,0,5" Width="200" Text="31-126"/>
+                <Label Content="Miasto: " HorizontalAlignment="Center"/>
                 <TextBox x:Name="NoweWydawnictwoMiasto" Margin="0,0,0,5" Width="200" Text="Kraków"/>
                 <Button Content="Dodaj" Click="DodajWydawnictwo_Click" Width="100" Margin="0,10,0,0"/>
                 <Button Content="Anuluj" Click="Anuluj_Click" Width="100"/>
@@ -88,7 +106,9 @@
         <Grid x:Name="DodajDziedzineGrid" Visibility="Collapsed">
             <StackPanel Margin="20">
                 <Label Content="Dodaj nowa dziedzine" FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
+                <Label Content="Nazwa Dziedziny: " HorizontalAlignment="Center"/>
                 <TextBox x:Name="NowaDziedzinaNazwa" Margin="0,0,0,5" Width="200" Text="Nazwa dziedziny"/>
+                <Label Content="Dziedzina nadrzędna: " HorizontalAlignment="Center"/>
                 <ComboBox x:Name="NowaDziedzinaNadrzednaId" Margin="0,0,0,5" Width="200" DisplayMemberPath="."/>
                 <Button Content="Dodaj" Click="DodajDziedzine_Click" Width="100" Margin="0,10,0,0"/>
                 <Button Content="Anuluj" Click="Anuluj_Click" Width="100"/>
@@ -97,26 +117,34 @@
         <Grid x:Name="DodajEgzemplarzGrid" Visibility="Collapsed">
             <StackPanel Margin="20">
                 <Label Content="Dodaj egzemplarz książki" FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
+                <Label Content="Wybierz książkę: " HorizontalAlignment="Center"/>
                 <ComboBox x:Name="NowyEgzemplarzKsiazka" Margin="0,0,0,5" Width="200" DisplayMemberPath="."/>
-                <TextBox x:Name="NowyEgzemplarzISBN" Margin="0,0,0,5" Width="200" Text="0"/>
-                <TextBlock x:Name="InformacjaOBledzie" Text="" Foreground="Red" Margin="10,5,0,0"/>
+                <Label Content="ISBN: (XXX-X-XX-XXXXXX-X)" HorizontalAlignment="Center"/>
+                <TextBox x:Name="NowyEgzemplarzISBN" Margin="0,0,0,5" Width="200" Text="123-1-12-123456-1"/>
+                <TextBlock x:Name="InformacjaOBledzie" HorizontalAlignment="Center" Text="" Foreground="Red" Margin="10,5,0,0"/>
                 <Button Content="Dodaj" Click="DodajEgzemplarz_Click" Width="100" Margin="0,10,0,0"/>
                 <Button Content="Anuluj" Click="Anuluj_Click" Width="100"/>
             </StackPanel>
         </Grid>
         <Grid x:Name="RejestracjaGrid" Visibility="Collapsed">
             <StackPanel>
+                <Label Content="Imie: " HorizontalAlignment="Center"/>
                 <TextBox x:Name="NowyCzytelnikImie" Margin="0,0,0,5" Width="200" Text="Imie"/>
+                <Label Content="Nazwisko: " HorizontalAlignment="Center"/>
                 <TextBox x:Name="NowyCzytelnikNazwisko" Margin="0,0,0,5" Width="200" Text="Nazwisko"/>
+                <Label Content="Adres: " HorizontalAlignment="Center"/>
                 <TextBox x:Name="NowyCzytelnikAdres" Margin="0,0,0,5" Width="200" Text="Adres"/>
-                <TextBox x:Name="NowyCzytelnikEmail" Margin="0,0,0,5" Width="200" Text="Email"/>
-                <TextBox x:Name="NowyCzytelnikTelefon" Margin="0,0,0,5" Width="200" Text="Telefon"/>
+                <Label Content="Email: " HorizontalAlignment="Center"/>
+                <TextBox x:Name="NowyCzytelnikEmail" Margin="0,0,0,5" Width="200" Text="imie.nazwisko@poczta"/>
+                <Label Content="Telefon: " HorizontalAlignment="Center"/>
+                <TextBox x:Name="NowyCzytelnikTelefon" Margin="0,0,0,5" Width="200" Text="123-456-789"/>
                 <Button x:Name="PrzyciskZarejestruj" Content="Zarejestruj" Width="100" Click="PrzyciskZarejestruj_Click" Margin="0,10,0,0"/>
                 <Button x:Name="AnulRejestracje" Content="Anuluj" Width="100" Click="AnulujWyszukiwanie_Click" />
             </StackPanel>
         </Grid>
         <Grid x:Name="LogowanieGrid" Visibility="Collapsed">
             <StackPanel>
+                <Label Content="Wybierz czytelnika: " HorizontalAlignment="Center"/>
                 <ComboBox x:Name="CzytelnicyComboBox" Margin="0,0,0,5" Width="200" DisplayMemberPath="." Text="Czytelnicy"/>
                 <Button x:Name="PrzyciskZaloguj" Content="Zaloguj" Width="100" Click="PrzyciskZaloguj_Click" Margin="0,10,0,0"/>
                 <Button x:Name="AnulujLogowanie" Content="Anuluj" Width="100" Click="AnulujWyszukiwanie_Click" />
@@ -125,10 +153,13 @@
         <Grid x:Name="WyszukiwarkaKsiazek" Visibility="Collapsed">
             <StackPanel>
                 <Label Content="Wyszukiwarka Książek" FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
+                <Label Content="Wpisz szukany tytuł: " HorizontalAlignment="Center"/>
                 <TextBox x:Name="WyszukiwanyTytul"  Margin="0,0,0,5" Width="200"/>
+                <Label Content="Wybierz szukaną dziedzinę książki: " HorizontalAlignment="Center"/>
                 <ComboBox x:Name="SortowaniePoDziedzinie" Margin="0,0,0,5" Width="200" DisplayMemberPath="." />
                 <Button Content="Wyszukaj" Click="WyszukajKsiazke_Click" Width="100" Margin="0,10,0,0"/>
                 <Button Content="Anuluj" Click="AnulujWyszukiwanie_Click" Width="100"/>
+                <Label Content="Aby wypożyczyć książkę kliknij na dostępny tytuł: " HorizontalAlignment="Center"/>
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="2*" />
@@ -141,7 +172,7 @@
                                           IsReadOnly="True" SelectionChanged="WyszukiwaneKsiazkiGrid_SelectionChanged">
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="Tytuł" Binding="{Binding Tytul}" />
-                                <DataGridTextColumn Header="Autor" Binding="{Binding Autor.Name}" />
+                                <DataGridTextColumn Header="Autor" Binding="{Binding Autor.FullName}" />
                                 <DataGridTextColumn Header="Rok Wydania" Binding="{Binding RokWydania, StringFormat=\{0:dd/MM/yyyy\}}" />
                             </DataGrid.Columns>
                         </DataGrid>
@@ -153,46 +184,50 @@
             </StackPanel>
         </Grid>
         <Grid x:Name="WypozyczeniaGrid" Visibility="Collapsed" VerticalAlignment="Stretch">
-            <StackPanel>
-                <Label Content="Wypozyczenia" FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
-                <Grid VerticalAlignment="Stretch">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="3*" />
-                        <ColumnDefinition Width="1*" />
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="*" />
-                    </Grid.RowDefinitions>
-                    <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
-                        <DataGrid x:Name="WypozyczoneKsiazki" Margin="20" AutoGenerateColumns="False"
-          Visibility="Visible" CanUserSortColumns="False" Width="Auto"  
-          HorizontalAlignment="Center" VerticalAlignment="Stretch"
-          IsReadOnly="True" SelectionChanged="WypozyczoneKsiazki_SelectionChanged">
-                            <DataGrid.Columns>
-                                <DataGridTextColumn Header="Tytuł" Binding="{Binding Tytul}" />
-                                <DataGridTextColumn Header="Data Wypożyczenia" Binding="{Binding DataWypozyczenia}" />
-                                <DataGridTextColumn Header="Data Zwrotu" Binding="{Binding DataZwrotu}">
-                                    <DataGridTextColumn.CellStyle>
-                                        <Style TargetType="{x:Type DataGridCell}">
-                                            <Setter Property="Background" Value="LightGreen" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding DataZwrotu}" Value="{x:Null}">
-                                                    <Setter Property="Background" Value="IndianRed" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </DataGridTextColumn.CellStyle>
-                                </DataGridTextColumn>
-                            </DataGrid.Columns>
-                        </DataGrid>
-                    </ScrollViewer>
-                    <StackPanel Grid.Column="1">
-                        <TextBlock x:Name="WybranyZwrotTextBlock"  TextWrapping="Wrap" Margin="20" VerticalAlignment="Top"/>
-                        <Button x:Name="PrzyciskZwrotEgzemplarza" Content="Zwrot" Height="50" Width="100" Visibility="Collapsed" Click="PrzyciskZwrotEgzemplarza_Click" Margin="20"/>
-                        <Button Content="Anuluj" Click="AnulujWyszukiwanie_Click" Width="100"/>
-                    </StackPanel>
-                </Grid>
-            </StackPanel>
+            <ScrollViewer>
+                <StackPanel>
+                    <Label Content="Wypozyczenia" FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
+                    <Label Content="Historia wypożyczeń: " HorizontalAlignment="Center"/>
+                    <Label Content="Aby zwrócić książkę kliknij na dane wypozyczenie! " HorizontalAlignment="Center"/>
+                    <Grid VerticalAlignment="Stretch">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="3*" />
+                            <ColumnDefinition Width="1*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+                            <DataGrid x:Name="WypozyczoneKsiazki" Margin="20" AutoGenerateColumns="False"
+                                  Visibility="Visible" CanUserSortColumns="False" Width="Auto"  
+                                  HorizontalAlignment="Center" VerticalAlignment="Stretch"
+                                  IsReadOnly="True" SelectionChanged="WypozyczoneKsiazki_SelectionChanged">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Tytuł" Binding="{Binding Tytul}" />
+                                    <DataGridTextColumn Header="Data Wypożyczenia" Binding="{Binding DataWypozyczenia}" />
+                                    <DataGridTextColumn Header="Data Zwrotu" Binding="{Binding DataZwrotu}">
+                                        <DataGridTextColumn.CellStyle>
+                                            <Style TargetType="{x:Type DataGridCell}">
+                                                <Setter Property="Background" Value="LightGreen" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding DataZwrotu}" Value="{x:Null}">
+                                                        <Setter Property="Background" Value="IndianRed" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </DataGridTextColumn.CellStyle>
+                                    </DataGridTextColumn>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </ScrollViewer>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock x:Name="WybranyZwrotTextBlock"  TextWrapping="Wrap" Margin="20" VerticalAlignment="Top"/>
+                            <Button x:Name="PrzyciskZwrotEgzemplarza" Content="Zwrot" Height="50" Width="100" Visibility="Collapsed" Click="PrzyciskZwrotEgzemplarza_Click" Margin="20"/>
+                            <Button Content="Anuluj" Click="AnulujWyszukiwanie_Click" Width="100"/>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </ScrollViewer>
         </Grid>
     </Grid>
 </Window>
