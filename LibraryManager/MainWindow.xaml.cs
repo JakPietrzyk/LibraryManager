@@ -81,7 +81,7 @@ namespace projekt
             foreach (var book in books.Take(3))
             {
                 TextBlock bookInfoTextBlock = new TextBlock();
-                bookInfoTextBlock.Text = $"\t{index}: Ocena: {book.Opinia.ToString("0.0")}. Książka pt.: {book.Tytul}, {book.Autor.FullName}, {book.RokWydania.Year}";
+                bookInfoTextBlock.Text = $"\t{index}: Ocena: {book.Opinia.ToString("0.0")}. Książka: {book.Tytul}, {book.Autor.FullName}, {book.RokWydania.Year}";
                 RankingiStackPanel.Children.Add(bookInfoTextBlock);
                 index++;
             }

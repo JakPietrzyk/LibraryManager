@@ -563,6 +563,8 @@ public class Database
         }
         catch(Exception ex)
         {
+            if (ex.Message.StartsWith("P0001"))
+                MessageBox.Show("Autor o podanym imieniu i nazwisku już istnieje");
             _logger.Error(ex.Message);
         }
     }
