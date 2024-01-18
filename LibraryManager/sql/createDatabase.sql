@@ -4,14 +4,14 @@ create schema projekt_bazy;
 set search_path to projekt_bazy;
 CREATE TABLE Wydawnictwo (
     wydawnictwo_id SERIAL,
-    nazwa VARCHAR(100),
-    adres VARCHAR(255),
+    nazwa VARCHAR(100) NOT NULL,
+    adres VARCHAR(255) NOT NULL,
     CONSTRAINT wydawnictwo_pk PRIMARY KEY (wydawnictwo_id)
 );
 
 CREATE TABLE Dziedzina (
     dziedzina_id SERIAL,
-    nazwa VARCHAR(100),
+    nazwa VARCHAR(100) NOT NULL,
     dziedzina_nadrzedna_id INT,
     CONSTRAINT dziedzina_pk PRIMARY KEY (dziedzina_id),
     CONSTRAINT dziedzina_fk FOREIGN KEY (dziedzina_nadrzedna_id) REFERENCES Dziedzina(dziedzina_id)
@@ -19,10 +19,10 @@ CREATE TABLE Dziedzina (
 
 CREATE TABLE Ksiazka (
     ksiazka_id SERIAL,
-    tytul VARCHAR(255),
-    rok_wydania date,
-    wydawnictwo_id INT,
-    dziedzina_id INT,
+    tytul VARCHAR(255) NOT NULL,
+    rok_wydania date NOT NULL,
+    wydawnictwo_id INT NOT NULL,
+    dziedzina_id INT NOT NULL,
     dostepnosc BOOLEAN,
     CONSTRAINT ksiazka_pk PRIMARY KEY (ksiazka_id),
     CONSTRAINT dziedzina_fk FOREIGN KEY (dziedzina_id) REFERENCES Dziedzina(dziedzina_id),
@@ -31,41 +31,41 @@ CREATE TABLE Ksiazka (
 
 CREATE TABLE Autor (
     autor_id SERIAL,
-    imie VARCHAR(50),
-    nazwisko VARCHAR(50),
+    imie VARCHAR(50) NOT NULL,
+    nazwisko VARCHAR(50) NOT NULL,
     CONSTRAINT autor_pk PRIMARY KEY (autor_id)
 );
 
 CREATE TABLE Ksiazka_Autor (
-    ksiazka_id INT,
-    autor_id INT,
+    ksiazka_id INT NOT NULL,
+    autor_id INT NOT NULL,
     CONSTRAINT ksiazka_fk FOREIGN KEY (ksiazka_id) REFERENCES Ksiazka(ksiazka_id),
     CONSTRAINT autor_fk FOREIGN KEY (autor_id) REFERENCES Autor(autor_id)
 );
 
 CREATE TABLE Czytelnik (
     czytelnik_id SERIAL,
-    imie VARCHAR(50),
-    nazwisko VARCHAR(50),
-    adres VARCHAR(255),
-    email VARCHAR(100),
-    telefon VARCHAR(20),
+    imie VARCHAR(50) NOT NULL,
+    nazwisko VARCHAR(50) NOT NULL,
+    adres VARCHAR(255) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    telefon VARCHAR(20) NOT NULL,
     CONSTRAINT czytelnik_pk PRIMARY KEY (czytelnik_id)
 );
 
 CREATE TABLE Egzemplarz (
     egzemplarz_id SERIAL,
-    ksiazka_id INT,
-    isbn VARCHAR(17),
+    ksiazka_id INT NOT NULL,
+    isbn VARCHAR(17) NOT NULL,
     CONSTRAINT egzemplarz_pk PRIMARY KEY (egzemplarz_id),
     CONSTRAINT ksiazka_fk FOREIGN KEY (ksiazka_id) REFERENCES Ksiazka(ksiazka_id)
 );
 
 CREATE TABLE Wypozyczenie (
     wypozyczenie_id SERIAL,
-    czytelnik_id INT,
-    egzemplarz_id INT,
-    data_wypozyczenia TIMESTAMP,
+    czytelnik_id INT NOT NULL,
+    egzemplarz_id INT NOT NULL,
+    data_wypozyczenia TIMESTAMP NOT NULL,
     data_zwrotu TIMESTAMP,
     CONSTRAINT wypozyczenie_pk PRIMARY KEY (wypozyczenie_id),
     CONSTRAINT czytelnik_fk FOREIGN KEY (czytelnik_id) REFERENCES Czytelnik(czytelnik_id),
@@ -75,8 +75,8 @@ CREATE TABLE Wypozyczenie (
 
 CREATE TABLE Opinia_Czytelnika (
     opinia_id SERIAL,
-    czytelnik_id INT,
-    ksiazka_id INT,
+    czytelnik_id INT NOT NULL,
+    ksiazka_id INT NOT NULL,
     opinia INT CHECK (opinia >= 0 AND opinia <= 5),
     CONSTRAINT opinia_pk PRIMARY KEY (opinia_id),
     CONSTRAINT czytelnik_fk FOREIGN KEY (czytelnik_id) REFERENCES Czytelnik(czytelnik_id),

@@ -10,6 +10,7 @@
   <ItemGroup>
     <PackageReference Include="NLog" Version="5.2.7" />
     <PackageReference Include="Npgsql" Version="8.0.1" />
+	  <EmbeddedResource Include="NLog.config" />
   </ItemGroup>
 
 </Project>

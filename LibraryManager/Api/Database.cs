@@ -13,6 +13,8 @@ using NLog.Config;
 using NLog;
 using System.Windows;
 using NLog.Layouts;
+using System.IO;
+using System.Reflection;
 
 public class Database
 {
@@ -22,7 +24,6 @@ public class Database
     public Database() 
     {
         _logger =  NLog.LogManager.GetCurrentClassLogger(); 
-        _logger.Info("This is an informational log message");
 
         try
         {
@@ -41,6 +42,37 @@ public class Database
             if (_dbConnection.State == System.Data.ConnectionState.Open)
                 return true;
         return false;
+    }
+    public async Task CreateDatabase()
+    {
+        try
+        {
+            await ExecuteSqlScript("sql/createDatabase.sql");
+            await ExecuteSqlScript("sql/views.sql");
+            await ExecuteSqlScript("sql/triggers.sql");
+
+            _logger.Info("Database created successfully.");
+        }
+        catch (Exception ex)
+        {
+            _logger.Error($"Error creating database: {ex.Message}");
+        }
+    }
+
+    private async Task ExecuteSqlScript(string scriptPath)
+    {
+        try
+        {
+            string sqlScript = File.ReadAllText(scriptPath);
+            using var cmd = new NpgsqlCommand(sqlScript, _dbConnection);
+            cmd.ExecuteNonQuery();
+            _logger.Info($"Script '{scriptPath}' executed successfully.");
+        }
+        catch (Exception ex)
+        {
+            _logger.Error($"Error executing script '{scriptPath}': {ex.Message}");
+            throw;
+        }
     }
     public async Task<int> GetEgzemplarzKsiazki(int ksiazkaId)
     {
@@ -354,39 +386,6 @@ public class Database
             _logger.Error(ex.Message);
         }
         return publishers;
-    }
-    public async Task<List<DziedzinaDto>> GetGenres()
-    {
-        List<DziedzinaDto> genres = new List<DziedzinaDto>();
-        try
-        {
-            var sql = "SELECT * FROM Dziedzina";
-            using (var cmd = new NpgsqlCommand(sql, _dbConnection))
-            {
-                using (var reader = await cmd.ExecuteReaderAsync())
-                {
-                    while (reader.Read())
-                    {
-                        var genre = new DziedzinaDto
-                        {
-                            Id = Convert.ToInt32(reader["dziedzina_id"]),
-                            Nazwa = reader["nazwa"].ToString(),
-                        };
-
-                        if (reader["dziedzina_nadrzedna_id"] is DBNull)
-                            genre.DziedzinaNadrzednaId = null;
-                        else
-                            genre.DziedzinaNadrzednaId = Convert.ToInt32(reader["dziedzina_nadrzedna_id"]);
-                        genres.Add(genre);
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.Error(ex.Message);
-        }
-        return genres;
     }
     public async Task<string> GetGenresOfBook(int ksiazka_id)
     {

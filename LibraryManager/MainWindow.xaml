@@ -13,13 +13,14 @@
                    Text="Połączenie z bazą danych: BRAK POŁĄCZENIA!" />
                 <TextBlock x:Name="LoginStatusTB"  HorizontalAlignment="Left" VerticalAlignment="Top"
                    Text="Prosze wybrać czytelnika do uzyskania pełnej funkcjonalności!!!" />
+                <Button Content="Usuń i Utwórz bazę z pliku" Grid.Row="0" Click="ButtonDropSchema_Click" Margin="0,10,0,0" Height="25" Width="400" HorizontalAlignment="Left"/>
                 <Grid Height="122" >
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
-                    <Grid x:Name="Dodawanie" Grid.Column="0" Margin="0,0,0,-73">
+                    <Grid x:Name="Dodawanie" Grid.Column="0" Margin="0,30,0,-99">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="*"/>
@@ -33,7 +34,7 @@
                         <Button Content="Dodaj Dziedzine" Grid.Row="3" Click="DodajDziedzineShow_Click" Width="150" Margin="0,10,0,0" Height="25"/>
                         <Button Content="Dodaj Egzemplarz" Grid.Row="4" Click="DodajEgzemplarzShow_Click" Width="150" Margin="0,10,0,0" Height="25"/>
                     </Grid>
-                    <Grid x:Name="WyswietlanieDanych" Grid.Column="1">
+                    <Grid x:Name="WyswietlanieDanych"  Margin="253,30,253,-99" Grid.ColumnSpan="3">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="*"/>
@@ -41,7 +42,7 @@
                         <Button Content="Pokaż wszystkie wypozyczenia" Grid.Row="0" Click="PokazWypozyczenia_Click" Height="25" Margin="44,18,43,18" />
                         <Button Content="Wyszukiwarka książek" Grid.Row="1" Click="PokazWyszukiwarke_Click" Height="25" Margin="44,18,43,18"/>
                     </Grid>
-                    <Grid x:Name="Logowanie" Grid.Column="2">
+                    <Grid x:Name="Logowanie" Grid.Column="2"  Margin="0,30,0,-99">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="*"/>
@@ -51,7 +52,7 @@
                     </Grid>
                 </Grid>
             </StackPanel>
-            <StackPanel x:Name="RankingiStackPanel" Margin="20,257,20,10">
+            <StackPanel x:Name="RankingiStackPanel" Margin="20,326,20,10">
 
             </StackPanel>
         </Grid>

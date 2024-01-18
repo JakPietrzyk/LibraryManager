@@ -24,7 +24,6 @@ BEGIN
             )
         )
     );
-    
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -114,3 +113,4 @@ CREATE TRIGGER AktualizacjaDostepnosciKsiazkiPoJejDodaniu
 AFTER INSERT ON Ksiazka
 FOR EACH ROW
 EXECUTE FUNCTION DodanieKsiazkiUstawDostepnosc();
+

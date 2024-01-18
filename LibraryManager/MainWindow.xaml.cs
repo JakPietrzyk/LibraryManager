@@ -45,6 +45,12 @@ namespace projekt
                 WyszukiwaneKsiazkiGrid.Height = 1;
             }
         }
+        public async Task DropDatabaseAndCreateFromFile()
+        {
+            await _database.CreateDatabase();
+            await SetDataToComboBoxes();
+            await CreateRankings();
+        }
         public async void InitializeComponentsAndGetDataFromDatabase()
         {
             await SetDataToComboBoxes();
@@ -435,6 +441,8 @@ namespace projekt
             try
             {
                 IsConnectionAlive();
+                if (NowyEgzemplarzKsiazka.SelectedValue is null)
+                    return;
                 int selectedBookId = (int)NowyEgzemplarzKsiazka.SelectedValue;
                 KsiazkaDto selectedBook = (KsiazkaDto)NowyEgzemplarzKsiazka.SelectedItem;
 
@@ -746,5 +754,9 @@ namespace projekt
             }
         }
 
+        private async void ButtonDropSchema_Click(object sender, RoutedEventArgs e)
+        {
+            await DropDatabaseAndCreateFromFile();
+        }
     }
 }
