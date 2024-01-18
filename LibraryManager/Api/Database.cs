@@ -48,12 +48,14 @@ public class Database
         try
         {
             string sql = @"
-            SELECT e.egzemplarz_id 
+            SELECT DISTINCT e.egzemplarz_id
             FROM Egzemplarz e
-            LEFT JOIN Wypozyczenie w ON e.egzemplarz_id = w.egzemplarz_id
-            WHERE e.ksiazka_id = @ksiazka_id 
-            AND w.wypozyczenie_id IS NULL
-            OR data_zwrotu IS NOT NULL
+            WHERE e.ksiazka_id = @ksiazka_id
+            EXCEPT
+            SELECT DISTINCT e.egzemplarz_id
+            FROM Egzemplarz e
+            JOIN Wypozyczenie w ON e.egzemplarz_id = w.egzemplarz_id
+            WHERE e.ksiazka_id = @ksiazka_id AND data_zwrotu IS NULL
             LIMIT 1";
 
 
@@ -80,7 +82,7 @@ public class Database
         List<CzytelnikDto> results = new List<CzytelnikDto>();
         try
         {
-            string sql = "SELECT * FROM czytelnik";
+            string sql = "SELECT * FROM czytelnik ORDER BY nazwisko";
 
 
             using (var cmd = new NpgsqlCommand(sql, _dbConnection))
@@ -116,7 +118,7 @@ public class Database
         {
             string sql = "SELECT * FROM InformacjeOKsiazce ORDER BY tytul;";
 
-            if (nazwa != null)
+            if (tytul != null && nazwa != null)
                 sql = "WITH RECURSIVE Subcategories AS " +
                     "( SELECT dziedzina_id, nazwa " +
                     "FROM Dziedzina " +
@@ -126,14 +128,32 @@ public class Database
                     "FROM Dziedzina d " +
                     "JOIN Subcategories s " +
                     "ON d.dziedzina_nadrzedna_id = s.dziedzina_id ) " +
-                    "SELECT DISTINCT k.ksiazka_id, k.tytul, iok.autorzy, k.rok_wydania " +
+                    "SELECT DISTINCT k.ksiazka_id, k.tytul, iok.autorzy, k.rok_wydania, iok.wydawnictwo " +
                     "FROM Ksiazka k " +
                     "JOIN Subcategories s ON k.dziedzina_id = s.dziedzina_id " +
                     "JOIN InformacjeOKsiazce iok ON k.ksiazka_id = iok.ksiazka_id " +
-                    "GROUP BY k.ksiazka_id, k.tytul, iok.autorzy, k.rok_wydania " +
+                    "WHERE LOWER(k.tytul) LIKE LOWER(@tytul) " +
+                    "GROUP BY k.ksiazka_id, k.tytul, iok.autorzy, k.rok_wydania, iok.wydawnictwo " +
+                    "ORDER BY k.tytul";
+            else if (nazwa != null)
+                sql = "WITH RECURSIVE Subcategories AS " +
+                    "( SELECT dziedzina_id, nazwa " +
+                    "FROM Dziedzina " +
+                    "WHERE nazwa = @nazwa " +
+                    "UNION " +
+                    "SELECT d.dziedzina_id, d.nazwa " +
+                    "FROM Dziedzina d " +
+                    "JOIN Subcategories s " +
+                    "ON d.dziedzina_nadrzedna_id = s.dziedzina_id ) " +
+                    "SELECT DISTINCT k.ksiazka_id, k.tytul, iok.autorzy, k.rok_wydania, iok.wydawnictwo " +
+                    "FROM Ksiazka k " +
+                    "JOIN Subcategories s ON k.dziedzina_id = s.dziedzina_id " +
+                    "JOIN InformacjeOKsiazce iok ON k.ksiazka_id = iok.ksiazka_id " +
+                    "GROUP BY k.ksiazka_id, k.tytul, iok.autorzy, k.rok_wydania, iok.wydawnictwo " +
                     "ORDER BY k.tytul;";
-            if (tytul != null)
+            else if (tytul != null)
                 sql = "SELECT * FROM InformacjeOKsiazce WHERE LOWER(tytul) LIKE LOWER(@tytul) ORDER BY tytul";
+
 
             using (var cmd = new NpgsqlCommand(sql, _dbConnection))
             {
@@ -156,7 +176,8 @@ public class Database
                             Autor = new AutorDto
                             {
                                 FullName = reader["autorzy"].ToString()
-                            }
+                            },
+                            Wydawnictwo = reader["wydawnictwo"].ToString()
                         });
                     }
                 }
@@ -190,7 +211,8 @@ public class Database
                             {
                                 FullName = reader["autorzy"].ToString()
                             },
-                            Opinia = (decimal)reader["srednia_ocen"]
+                            Opinia = (decimal)reader["srednia_ocen"],
+                            Wydawnictwo = reader["wydawnictwo"].ToString()
                         }); 
                     }
                 }
@@ -283,7 +305,7 @@ public class Database
         List<AutorDto> authors = new List<AutorDto>();
         try
         {
-            var sql = "SELECT autor_id, CONCAT(imie, ' ', nazwisko) AS author_name FROM Autor";
+            var sql = "SELECT autor_id, CONCAT(imie, ' ', nazwisko) AS author_name FROM Autor ORDER BY author_name";
             using (var cmd = new NpgsqlCommand(sql, _dbConnection))
             {
                 using (var reader = await cmd.ExecuteReaderAsync())
@@ -310,7 +332,7 @@ public class Database
         List<WydawnictwoDto> publishers = new List<WydawnictwoDto>();
         try
         {
-            var sql = "SELECT wydawnictwo_id, nazwa FROM Wydawnictwo";
+            var sql = "SELECT wydawnictwo_id, nazwa FROM Wydawnictwo ORDER BY nazwa";
             using (var cmd = new NpgsqlCommand(sql, _dbConnection))
             {
                 using (var reader = await cmd.ExecuteReaderAsync())
@@ -366,12 +388,47 @@ public class Database
         }
         return genres;
     }
+    public async Task<string> GetGenresOfBook(int ksiazka_id)
+    {
+        try
+        {
+            var sql = "WITH RECURSIVE BookCategories AS ( " +
+                "SELECT dziedzina_id, dziedzina_nadrzedna_id, nazwa " +
+                "FROM Dziedzina " +
+                "WHERE dziedzina_id IN (" +
+                "SELECT dziedzina_id " +
+                "FROM Ksiazka " +
+                "WHERE ksiazka_id = @ksiazka_id) " +
+                "UNION " +
+                "SELECT d.dziedzina_id, d.dziedzina_nadrzedna_id, d.nazwa " +
+                "FROM Dziedzina d " +
+                "JOIN BookCategories bc ON d.dziedzina_id = bc.dziedzina_nadrzedna_id ) " +
+                "SELECT STRING_AGG(nazwa, ', ') AS wszystkie_dziedziny " +
+                "FROM BookCategories";
+            using (var cmd = new NpgsqlCommand(sql, _dbConnection))
+            {
+                cmd.Parameters.AddWithValue("@ksiazka_id", ksiazka_id);
+                using (var reader = await cmd.ExecuteReaderAsync())
+                {
+                    while (reader.Read())
+                    {
+                        return reader["wszystkie_dziedziny"].ToString();
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex.Message);
+        }
+        return "";
+    }
     public async Task<List<DziedzinaDto>> GetGenresDistinct()
     {
         List<DziedzinaDto> genres = new List<DziedzinaDto>();
         try
         {
-            var sql = "SELECT nazwa FROM Dziedzina GROUP BY nazwa";
+            var sql = "SELECT nazwa FROM Dziedzina GROUP BY nazwa ORDER BY nazwa";
             using (var cmd = new NpgsqlCommand(sql, _dbConnection))
             {
                 using (var reader = await cmd.ExecuteReaderAsync())
@@ -545,11 +602,6 @@ public class Database
         try
         {
             var hierarchyIds = new List<int>();
-
-            //using (var conn = new NpgsqlConnection("connection_string_here"))
-            //{
-            //    await conn.OpenAsync();
-
                 string query = @"
                 WITH RECURSIVE Subcategories AS (
                     SELECT dziedzina_id, dziedzina_nadrzedna_id
@@ -659,7 +711,7 @@ public class Database
         try
         {
             using var cmd = new NpgsqlCommand("INSERT INTO Dziedzina (nazwa, dziedzina_nadrzedna_id) VALUES (@nazwa, @dziedzina_nadrzedna_id) RETURNING dziedzina_id", _dbConnection);
-            cmd.Parameters.AddWithValue("@nazwa", genreName); // Replace with the actual genre name or logic to retrieve the genre name
+            cmd.Parameters.AddWithValue("@nazwa", genreName);
 
             if (dziedzina_nadrzedna_id != null)
             {

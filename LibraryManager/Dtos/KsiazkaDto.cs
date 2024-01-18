@@ -13,5 +13,6 @@ namespace LibraryManager.Dtos
         public DateTime RokWydania { get; set; }
         public AutorDto Autor { get; set; }
         public decimal Opinia { get; set; }
+        public string Wydawnictwo { get; set; }
     }
 }

@@ -27,7 +27,7 @@
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
-                        <Button Content="Dodaj książkę" Grid.Row="0" Click="DodajKsiazke_Click" Width="150" Margin="0,10,0,0" Height="25"/>
+                        <Button Content="Dodaj Książkę" Grid.Row="0" Click="DodajKsiazke_Click" Width="150" Margin="0,10,0,0" Height="25"/>
                         <Button Content="Dodaj Autora" Grid.Row="1" Click="DodajAutoraShow_Click" Width="150" Margin="0,10,0,0" Height="25"/>
                         <Button Content="Dodaj Wydawnictwo" Grid.Row="2" Click="DodajWydawnictwoShow_Click" Width="150" Margin="0,10,0,0" Height="25"/>
                         <Button Content="Dodaj Dziedzine" Grid.Row="3" Click="DodajDziedzineShow_Click" Width="150" Margin="0,10,0,0" Height="25"/>
@@ -60,7 +60,7 @@
                 <StackPanel Margin="20">
                     <Label Content="Dodaj nową Książkę" FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
                     <Label Content="Tytuł książki: " HorizontalAlignment="Center"/>
-                    <TextBox x:Name="NewBookTitle" Margin="0,0,0,5" Width="200" Text="Tytuł książki"/>
+                    <TextBox x:Name="NewBookTitle" Margin="0,0,0,5" Width="200" Text="Tytul ksiazki"/>
                     <Label Content="Data wydania książki: " HorizontalAlignment="Center"/>
                     <TextBox x:Name="NewBookDate" Margin="0,0,0,5" Width="200" Text="2024-01-01"/>
                     <Label Content="Autorzy książki: " HorizontalAlignment="Center"/>
@@ -118,9 +118,10 @@
             <StackPanel Margin="20">
                 <Label Content="Dodaj egzemplarz książki" FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
                 <Label Content="Wybierz książkę: " HorizontalAlignment="Center"/>
-                <ComboBox x:Name="NowyEgzemplarzKsiazka" Margin="0,0,0,5" Width="200" DisplayMemberPath="."/>
+                <ComboBox x:Name="NowyEgzemplarzKsiazka" Margin="0,0,0,5" Width="200" DisplayMemberPath="." SelectionChanged="NowyEgzemplarzKsiazka_SelectionChanged"/>
                 <Label Content="ISBN: (XXX-X-XX-XXXXXX-X)" HorizontalAlignment="Center"/>
                 <TextBox x:Name="NowyEgzemplarzISBN" Margin="0,0,0,5" Width="200" Text="123-1-12-123456-1"/>
+                <TextBlock x:Name="InformacjeOKsiazceTextBlock" Margin="0,0,0,5" Width="200" />
                 <TextBlock x:Name="InformacjaOBledzie" HorizontalAlignment="Center" Text="" Foreground="Red" Margin="10,5,0,0"/>
                 <Button Content="Dodaj" Click="DodajEgzemplarz_Click" Width="100" Margin="0,10,0,0"/>
                 <Button Content="Anuluj" Click="Anuluj_Click" Width="100"/>
@@ -145,7 +146,8 @@
         <Grid x:Name="LogowanieGrid" Visibility="Collapsed">
             <StackPanel>
                 <Label Content="Wybierz czytelnika: " HorizontalAlignment="Center"/>
-                <ComboBox x:Name="CzytelnicyComboBox" Margin="0,0,0,5" Width="200" DisplayMemberPath="." Text="Czytelnicy"/>
+                <ComboBox x:Name="CzytelnicyComboBox" Margin="0,0,0,5" Width="200" DisplayMemberPath="." Text="Czytelnicy" SelectionChanged="CzytelnicyComboBox_SelectionChanged"/>
+                <TextBlock x:Name="InformacjeOCzytelnikuTextBlock" Margin="0,0,0,5" Width="200"/>
                 <Button x:Name="PrzyciskZaloguj" Content="Zaloguj" Width="100" Click="PrzyciskZaloguj_Click" Margin="0,10,0,0"/>
                 <Button x:Name="AnulujLogowanie" Content="Anuluj" Width="100" Click="AnulujWyszukiwanie_Click" />
             </StackPanel>
@@ -173,7 +175,7 @@
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="Tytuł" Binding="{Binding Tytul}" />
                                 <DataGridTextColumn Header="Autor" Binding="{Binding Autor.FullName}" />
-                                <DataGridTextColumn Header="Rok Wydania" Binding="{Binding RokWydania, StringFormat=\{0:dd/MM/yyyy\}}" />
+                                <DataGridTextColumn Header="Rok Wydania" Binding="{Binding RokWydania, StringFormat=\{0:yyyy\}}" />
                             </DataGrid.Columns>
                         </DataGrid>
 

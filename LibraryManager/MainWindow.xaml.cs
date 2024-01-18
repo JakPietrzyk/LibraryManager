@@ -81,7 +81,7 @@ namespace projekt
             foreach (var book in books.Take(3))
             {
                 TextBlock bookInfoTextBlock = new TextBlock();
-                bookInfoTextBlock.Text = $"\t{index}: Ocena: {book.Opinia.ToString("0.0")}. Książka pt.: {book.Tytul}, {book.Autor.FullName}, {book.RokWydania.ToShortDateString()}";
+                bookInfoTextBlock.Text = $"\t{index}: Ocena: {book.Opinia.ToString("0.0")}. Książka pt.: {book.Tytul}, {book.Autor.FullName}, {book.RokWydania.Year}";
                 RankingiStackPanel.Children.Add(bookInfoTextBlock);
                 index++;
             }
@@ -103,7 +103,7 @@ namespace projekt
         {
             await DisplayPublishers();
             await DisplayGenres();
-            await WyswietlCzytelnikow();
+            //await WyswietlCzytelnikow();
             await DisplayBooks();
             await CreateComboBoxes();
             await CreateComboBoxesAuthors();
@@ -127,8 +127,6 @@ namespace projekt
             var genres = await _database.GetGenresDistinct();
             var genresSortowanie = new List<DziedzinaDto>();
             genresSortowanie.AddRange(genres);
-            //NewBookGenre.ItemsSource = genres;
-            //NewBookGenre.DisplayMemberPath = "Nazwa";
             genresSortowanie.Insert(0, new DziedzinaDto()
             {
                 Nazwa = ""
@@ -313,6 +311,11 @@ namespace projekt
                     MessageBox.Show("Wprowadź unikalne wartości dla wszystkich dziedzin.");
                     return;
                 }
+                if (authors_id.Count != authors_id.Distinct().Count())
+                {
+                    MessageBox.Show("Wprowadź unikalne wartości dla wszystkich autorów.");
+                    return;
+                }
                 int? genreId = await _database.GetExistingHierarchyId(genreNames);
                 if (genreNames.Any() && genreId == null)
                 {
@@ -415,7 +418,8 @@ namespace projekt
                 if (!ValidateISBN(isbn))
                     throw new InvalidDataException();
                 await _database.AddCopyOfBook(bookId, isbn);
-                await SetDataToComboBoxes();
+                //await SetDataToComboBoxes();
+                await DisplayBooks();
                 await CreateRankings();
                 await AktualizujInformacjeOKsiazce();
                 CollapseAll();
@@ -426,6 +430,28 @@ namespace projekt
                 MessageBox.Show("Proszę wypełnić wszystkie pola poprawnie.");
             }
         }
+        private async void NowyEgzemplarzKsiazka_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            try
+            {
+                IsConnectionAlive();
+                int selectedBookId = (int)NowyEgzemplarzKsiazka.SelectedValue;
+                KsiazkaDto selectedBook = (KsiazkaDto)NowyEgzemplarzKsiazka.SelectedItem;
+
+                if (selectedBook != null)
+                {
+                    InformacjeOKsiazceTextBlock.Text = $"Tytuł: {selectedBook.Tytul}\n" +
+                                                       $"Autorzy: {selectedBook.Autor.FullName}\n" +
+                                                       $"Wydawnictwo: {selectedBook.Wydawnictwo}\n" +
+                                                       $"Rok Wydania: {selectedBook.RokWydania.Year}\n";
+                }
+            }
+            catch (Exception ex)
+            {
+                
+            }
+        }
+
         private void NoweEgzemplarzeIlosc_PreviewTextInput(object sender, System.Windows.Input.TextCompositionEventArgs e)
         {
             TextBox textBox = sender as TextBox;
@@ -467,7 +493,11 @@ namespace projekt
             {
                 bookGenre = null;
             }
-            if (!string.IsNullOrEmpty(bookGenre))
+            if(!string.IsNullOrEmpty(bookGenre) && !string.IsNullOrEmpty(tytulDoWyszukania))
+            {
+                books = await _database.GetAllBooks(bookGenre, tytulDoWyszukania);
+            }
+            else if (!string.IsNullOrEmpty(bookGenre))
             {
                 books = await _database.GetAllBooks(bookGenre);
             }
@@ -495,6 +525,7 @@ namespace projekt
             var czyDostepna = await _database.GetAvailability(wybranaKsiazka.Id);
             string dostepnosc = "";
             var ocena = await _database.GetRating(wybranaKsiazka.Id);
+            var genres = await _database.GetGenresOfBook(wybranaKsiazka.Id);
             Brush color = Brushes.Black;
             if (czyDostepna)
             {
@@ -508,9 +539,9 @@ namespace projekt
                 color = Brushes.Red;
             }
             if (ocena >= 0)
-                WybraneWypozyczenieTextBlock.Text = $"Tytuł: {wybranaKsiazka.Tytul}\nAutor:{wybranaKsiazka.Autor.FullName}\nRok: {wybranaKsiazka.RokWydania.ToShortDateString()}\nStan: {dostepnosc}\nOcena: {ocena.ToString("0.0")}/5";
+                WybraneWypozyczenieTextBlock.Text = $"Tytuł: {wybranaKsiazka.Tytul}\nAutor: {wybranaKsiazka.Autor.FullName}\nRok: {wybranaKsiazka.RokWydania.Year}\nWydawnictwo: {wybranaKsiazka.Wydawnictwo}\nStan: {dostepnosc}\nOcena: {ocena.ToString("0.0")}/5\nDziedziny: {genres}";
             else
-                WybraneWypozyczenieTextBlock.Text = $"Tytuł: {wybranaKsiazka.Tytul}\nAutor:{wybranaKsiazka.Autor.FullName}\nRok: {wybranaKsiazka.RokWydania.ToShortDateString()}\nStan: {dostepnosc}\nOcena: brak ocen";
+                WybraneWypozyczenieTextBlock.Text = $"Tytuł: {wybranaKsiazka.Tytul}\nAutor: {wybranaKsiazka.Autor.FullName}\nRok: {wybranaKsiazka.RokWydania.Year}\nWydawnictwo: {wybranaKsiazka.Wydawnictwo}\nStan: {dostepnosc}\nOcena: brak ocen\nDziedziny: {genres}";
 
             WybraneWypozyczenieTextBlock.Foreground = color;
         }
@@ -544,10 +575,32 @@ namespace projekt
             {
                 MessageBox.Show("Proszę się zalogować.");
                 CollapseAll();
+                await WyswietlCzytelnikow();
                 LogowanieGrid.Visibility = Visibility.Visible;
             }
             catch (Exception ex)
             {
+            }
+        }
+        private async void CzytelnicyComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            try
+            {
+                IsConnectionAlive();
+                int selectedReaderId = (int)CzytelnicyComboBox.SelectedValue;
+                CzytelnikDto selectedReader = (CzytelnikDto)CzytelnicyComboBox.SelectedItem;
+
+                if (selectedReader != null)
+                {
+                    InformacjeOCzytelnikuTextBlock.Text = $"Imie i Nazwisko: {selectedReader.PelneImieNazwisko}\n" +
+                                                       $"Adres: {selectedReader.Adres}\n" +
+                                                       $"Email: {selectedReader.Email}\n" +
+                                                       $"Telefon: {selectedReader.Telefon}\n";
+                }
+            }
+            catch (Exception ex)
+            {
+                
             }
         }
         private void CollapseAll()
@@ -602,9 +655,10 @@ namespace projekt
             }
             MainGrid.Visibility = Visibility.Visible;
         }
-        private void PokazLogowanie_Click(object sender, RoutedEventArgs e)
+        private async void PokazLogowanie_Click(object sender, RoutedEventArgs e)
         {
             CollapseAll();
+            await WyswietlCzytelnikow();
             LogowanieGrid.Visibility = Visibility.Visible;
         }
         private async void WypozyczoneKsiazki_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -645,6 +699,7 @@ namespace projekt
             {
                 MessageBox.Show("Proszę się zalogować.");
                 CollapseAll();
+                await WyswietlCzytelnikow();
                 LogowanieGrid.Visibility = Visibility.Visible;
             }
         }
